@@ -1,10 +1,10 @@
-- [Intial Setup](docs/Initial\ Setup.md)
+- [Intial Setup](Initial\ Setup.md)
 - **Install LEMP Stack**
-- [Tweaking](docs/Tweaking.md)
-- [Wordpress](docs/Wordpress.md)
-- [System Monitoring](docs/System\ Monitoring.md)
-- [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
-- [Automation](docs/Automation.md)
+- [Tweaking](Tweaking.md)
+- [Wordpress](Wordpress.md)
+- [System Monitoring](System\ Monitoring.md)
+- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [Automation](Automation.md)
 
 # Install LEMP
 
@@ -131,4 +131,4 @@ If everything is fine, remove the file to not give any information away
 sudo rm /home/ubuntu/www/html/info.php
 ```
 
-**NEXT STEP** -> [Tweaking](docs/Tweaking.md)
+**NEXT STEP** -> [Tweaking](Tweaking.md)

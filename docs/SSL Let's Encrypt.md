@@ -1,10 +1,10 @@
-- [Intial Setup](docs/Initial\ Setup.md)
-- [Install LEMP Stack](docs/Install\ LEMP.md)
-- [Tweaking](docs/Tweaking.md)
-- [Wordpress](docs/Wordpress.md)
-- [System Monitoring](docs/System\ Monitoring.md)
+- [Intial Setup](Initial\ Setup.md)
+- [Install LEMP Stack](Install\ LEMP.md)
+- [Tweaking](Tweaking.md)
+- [Wordpress](Wordpress.md)
+- [System Monitoring](System\ Monitoring.md)
 - **SSL Let's Encrypt**
-- [Automation](docs/Automation.md)
+- [Automation](Automation.md)
 
 # SSL Let's Encrypt
 
@@ -96,4 +96,4 @@ And add these lines
 
 This will create a new cron job that will execute the `letsencrypt renew` command every Monday at 0:30, and reload Nginx at 0:35 (so the renewed certificate will be used). The output produced by the command will be piped to a log file located at `/home/ubuntu/logs/le-renewal.log`.
 
-**NEXT STEP** -> [Automation](docs/Automation.md)
+**NEXT STEP** -> [Automation](Automation.md)

@@ -1,10 +1,10 @@
-- [Intial Setup](docs/Initial\ Setup.md)
-- [Install LEMP Stack](docs/Install\ LEMP.md)
+- [Intial Setup](Initial\ Setup.md)
+- [Install LEMP Stack](Install\ LEMP.md)
 - **Tweaking**
-- [Wordpress](docs/Wordpress.md)
-- [System Monitoring](docs/System\ Monitoring.md)
-- [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
-- [Automation](docs/Automation.md)
+- [Wordpress](Wordpress.md)
+- [System Monitoring](System\ Monitoring.md)
+- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [Automation](Automation.md)
 
 # Tweaking
 
@@ -98,4 +98,4 @@ scp -r nginx/globals server_alias:/etc/nginx/
 scp -r nginx/sites-available/* server_alias:/etc/nginx/sites-available/
 ```
 
-**NEXT STEP** -> [Wordpress](docs/Wordpress.md)
+**NEXT STEP** -> [Wordpress](Wordpress.md)

@@ -1,10 +1,10 @@
-- [Intial Setup](docs/Initial\ Setup.md)
-- [Install LEMP Stack](docs/Install\ LEMP.md)
-- [Tweaking](docs/Tweaking.md)
-- [Wordpress](docs/Wordpress.md)
+- [Intial Setup](Initial\ Setup.md)
+- [Install LEMP Stack](Install\ LEMP.md)
+- [Tweaking](Tweaking.md)
+- [Wordpress](Wordpress.md)
 - **System Monitoring**
-- [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
-- [Automation](docs/Automation.md)
+- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [Automation](Automation.md)
 
 # System Monitoring with netdata
 
@@ -71,4 +71,4 @@ git pull
 sudo ./netdata-installer.sh
 ```
 
-**NEXT STEP** -> [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
+**NEXT STEP** -> [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)

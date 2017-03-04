@@ -1,10 +1,10 @@
 - **Intial Setup**
-- [Install LEMP Stack](docs/Install\ LEMP.md)
-- [Tweaking](docs/Tweaking.md)
-- [Wordpress](docs/Wordpress.md)
-- [System Monitoring](docs/System\ Monitoring.md)
-- [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
-- [Automation](docs/Automation.md)
+- [Install LEMP Stack](Install\ LEMP.md)
+- [Tweaking](Tweaking.md)
+- [Wordpress](Wordpress.md)
+- [System Monitoring](System\ Monitoring.md)
+- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [Automation](Automation.md)
 
 # Initial Setup
 
@@ -268,4 +268,4 @@ mkdir /home/ubuntu/www
 mkdir /home/ubuntu/www/html
 ```
 
-**NEXT STEP** -> [Install LEMP Stack](docs/Install\ LEMP.md)
+**NEXT STEP** -> [Install LEMP Stack](Install\ LEMP.md)

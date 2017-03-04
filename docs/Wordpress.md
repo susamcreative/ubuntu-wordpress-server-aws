@@ -1,10 +1,10 @@
-- [Intial Setup](docs/Initial\ Setup.md)
-- [Install LEMP Stack](docs/Install\ LEMP.md)
-- [Tweaking](docs/Tweaking.md)
+- [Intial Setup](Initial\ Setup.md)
+- [Install LEMP Stack](Install\ LEMP.md)
+- [Tweaking](Tweaking.md)
 - **Wordpress**
-- [System Monitoring](docs/System\ Monitoring.md)
-- [SSL Let's Encrypt](docs/SSL\ Let's\ Encrypt.md)
-- [Automation](docs/Automation.md)
+- [System Monitoring](System\ Monitoring.md)
+- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [Automation](Automation.md)
 
 # Wordpress
 
@@ -155,4 +155,4 @@ When update is finished, change the permissions again for security reasons
 sudo chown -R ubuntu /home/ubuntu/www/domain_name
 ```
 
-**NEXT STEP** -> [System Monitoring](docs/System\ Monitoring.md)
+**NEXT STEP** -> [System Monitoring](System\ Monitoring.md)
