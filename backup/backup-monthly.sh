@@ -1,6 +1,6 @@
 # Define global variables
 THEDATE=`date +%y.%m.%d_%H.%M`
-THEFREQ="daily"
+THEFREQ="monthly"
 
 # Export global varibles to be used on other scripts
 export THEDATE
