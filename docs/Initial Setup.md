@@ -1,9 +1,9 @@
 - **Intial Setup**
-- [Install LEMP Stack](Install\ LEMP.md)
+- [Install LEMP Stack](Install LEMP.md)
 - [Tweaking](Tweaking.md)
 - [Wordpress](Wordpress.md)
-- [System Monitoring](System\ Monitoring.md)
-- [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+- [System Monitoring](System Monitoring.md)
+- [SSL Let's Encrypt](SSL Let's Encrypt.md)
 - [Automation](Automation.md)
 
 # Initial Setup
