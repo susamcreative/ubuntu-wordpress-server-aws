@@ -2,7 +2,7 @@
 - [Install LEMP Stack](Install%20LEMP.md)
 - [Tweaking](Tweaking.md)
 - **Wordpress**
--- [System Monitoring](System%20Monitoring.md)
+- [System Monitoring](System%20Monitoring.md)
 - [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
 - [Automation](Automation.md)
 
