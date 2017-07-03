@@ -112,7 +112,7 @@ sudo chmod -R g+w /home/ubuntu/www/domain_name/wp-content/plugins
 sudo chmod -R g+w /home/ubuntu/www/domain_name/wp-content/uploads
 ```
 
-**Note**: These permissions won't allow wordpress to do an update. Permissions change for update will be explained later in this guide.
+**Note**: These permissions won't allow wordpress to do an update. Permission changes for updates will be explained later in this guide.
 
 ### Set up wp-config.php
 
