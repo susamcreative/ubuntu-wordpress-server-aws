@@ -155,4 +155,4 @@ When update is finished, change the permissions again for security reasons
 sudo chown -R ubuntu /home/ubuntu/www/domain_name
 ```
 
-**NEXT STEP** -> [System Monitoring](System\ Monitoring.md)
+**NEXT STEP** -> [System Monitoring](System%20Monitoring.md)

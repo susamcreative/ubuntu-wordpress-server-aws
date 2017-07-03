@@ -268,4 +268,4 @@ mkdir /home/ubuntu/www
 mkdir /home/ubuntu/www/html
 ```
 
-**NEXT STEP** -> [Install LEMP Stack](Install\ LEMP.md)
+**NEXT STEP** -> [Install LEMP Stack](Install%20LEMP.md)

@@ -71,4 +71,4 @@ git pull
 sudo ./netdata-installer.sh
 ```
 
-**NEXT STEP** -> [SSL Let's Encrypt](SSL\ Let's\ Encrypt.md)
+**NEXT STEP** -> [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
