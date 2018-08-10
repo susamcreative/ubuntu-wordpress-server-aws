@@ -6,7 +6,7 @@ export ZSH=/home/ubuntu/.oh-my-zsh
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
 
-POWERLEVEL9K_MODE='awesome-patched'
+POWERLEVEL9K_MODE='nerdfont-fontconfig'
 
 POWERLEVEL9K_CUSTOM_CONTEXT="print 'server_alias'"
 
@@ -35,12 +35,12 @@ POWERLEVEL9K_TIME_FOREGROUND='white'
 POWERLEVEL9K_TIME_BACKGROUND='black'
 
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(os_icon custom_context_joined dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs php_version root_indicator load ram nvm time)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs php_version root_indicator load ram nvm)
 
 POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=4
 
-POWERLEVEL9K_TIME_FORMAT="%D{%H:%M:%S} \UE12E"
+POWERLEVEL9K_TIME_FORMAT="%D{%H:%M:%S}"
 
 POWERLEVEL9K_STATUS_VERBOSE=false
 export DEFAULT_USER="$USER"
