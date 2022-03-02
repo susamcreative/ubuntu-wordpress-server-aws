@@ -8,7 +8,7 @@
 
 [source](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh)
 
-## Choose a Username & a Server Alias
+## Choose a Username & Server Alias
 
 1. Open these documents on a file editor and replace every instance of `_user_` with the username you'd like to use on your server.
 2. Open these documents on a file editor and replace every instance of `_server_alias_` with the server alias you'd like to use for your server.
