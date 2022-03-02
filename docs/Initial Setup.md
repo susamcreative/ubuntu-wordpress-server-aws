@@ -1,14 +1,19 @@
 - **Intial Setup**
 - [Install LEMP Stack](Install%20LEMP.md)
-- [Tweaking](Tweaking.md)
 - [Wordpress](Wordpress.md)
-- [System Monitoring](System%20Monitoring.md)
 - [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
 - [Automation](Automation.md)
 
 # Initial Setup
 
 [source](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh)
+
+## Choose a Username & a Server Alias
+
+1. Open these documents on a file editor and replace every instance of `_user_` with the username you'd like to use on your server.
+2. Open these documents on a file editor and replace every instance of `_server_alias_` with the server alias you'd like to use for your server.
+
+**PS:Anything you see in this repo that's in between underscores are placeholders to be replaced, make sure you do that for every instance.**
 
 ## Create a Server
 
@@ -34,31 +39,28 @@ Move the key pair under .ssh folder and change permissions
 chmod 400 ~/.ssh/key_pair.pem
 ```
 
-Create an [Elastic IP](https://console.aws.amazon.com/ec2/v2/home?#Addresses:sort=PublicIp)
+8. Create an [Elastic IP](https://console.aws.amazon.com/ec2/v2/home?#Addresses:sort=PublicIp)
+9. Open these documents on a file editor and change every instance of `_ip_of_the_server_` to the ip of your server.
 
-**Note**: `ubuntu` is the username for the server, if another username is used, make sure to change `ubuntu` to desired username in every file.
+### SSH Login
 
-### SSH Login as Root
-
-First, initiate the connection to your server
+First, initiate the connection to your server after replacing ever instance of `_ssh_key_` with the key name you use and the `_port_number_` with your custom port number, if not replace it with `22`
 ```
-ssh ubuntu@SERVER_IP_ADDRESS
+ssh -i _ssh_key_ ubuntu@_ip_of_the_server_
 ```
 
 The first time you attempt to connect to your server, you will likely see a warning that looks like this:
 ```
-The authenticity of host '123.123.123.123 (123.123.123.123)' can't be established.
+The authenticity of host '[_ip_of_the_server_]:_port_number_ ([_ip_of_the_server_]:_port_number_)' can't be established.
 ECDSA key fingerprint is SHA256:CsYXAxsTdjpbTwc21AlfXId/h0FSyNct3NOdDtlmJf1.
 Are you sure you want to continue connecting (yes/no)?
 ```
 
-Go ahead and type `yes` to continue to connect. Here, your computer is telling you that the remote server is not recognized. Since this is your first time connecting, this is completely expected.
-
-**Note**: Since root login is disabled by default and `ubuntu` user has `root` privileges, there is no need for editing settings or creating another user.
+Go ahead and type `yes` to continue to connect. Here, your computer is telling you that the remote server is not recognized. Since this is your first time connecting, this is expected.
 
 ### Remote SSH Config
 
-Pass this step if not using custom SSH Port
+Skip this step if you're not using a custom SSH Port
 
 Edit server SSH Config file, change the port and save
 ```
@@ -70,6 +72,66 @@ Restart SSH service
 sudo service sshd restart
 ```
 
+### Create a New User 
+
+[source](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/managing-users.html)
+
+**Instead of using the default user, we are going to create a new user in order to increase security**
+
+Retrieve the public key from the key pair that you created
+```
+ssh-keygen -y -f .ssh/_ssh_key_
+```
+
+The command will return the public key, **copy it**, we will use this for our new user
+
+Then login to the ubuntu user using ssh
+```
+ssh -i _ssh_key_ -p _port_number_ ubuntu@_ip_of_the_server_
+```
+
+Create the new user
+```
+sudo adduser _user_  --disabled-password
+```
+
+In order to remove the password requirement from the new user, open visudo
+```
+sudo visudo
+```
+
+At the end of the file add this:
+```
+# Remove password requirement for _user_
+_user_ ALL=(ALL:ALL) NOPASSWD: ALL
+```
+
+Switch to the new account so that the directory and file that you create will have the proper ownership.
+```
+sudo su - _user_
+```
+
+Create the necessary files and open the authorized_keys file
+```
+mkdir .ssh
+chmod 700 .ssh
+touch .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
+nano .ssh/authorized_keys
+```
+
+Paste the public key you retrieved, save and close the file
+
+Login to the server with your new user
+```
+ssh -i _ssh_key_ -p _port_number_ _user_@_ip_of_the_server_
+```
+
+Remove the ubuntu user
+```
+sudo userdel -r ubuntu
+```
+
 ### Local SSH Config
 
 Configure local ssh config file for easier connection
@@ -79,14 +141,14 @@ nano ~/.ssh/config
 
 Create an alias using this template
 ```
-Host server_alias
-Hostname ip_of_the_server
-User username
-Port custom_port (remove the line if 22)
+Host _server_alias_
+Hostname _ip_of_the_server_
+User _user_
+Port _port_number_ (remove the line if 22)
 IdentityFile ~/.ssh/key_pair.pem
 ```
 
-**Remove default SSH port from security group**
+**If you're using a custom ssh port, remove default SSH port from security group**
 
 ## Install oh-my-zsh
 
@@ -104,19 +166,19 @@ sudo chsh -s $(which zsh) `whoami`
 
 And to install `oh-my-zsh`
 ```
-sudo sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
+sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
 ```
 
 ### Customize oh-my-zsh
 
 First get ownership of the user folder
 ```
-sudo chown -R ubuntu ~/
+sudo chown -R _user_ ~/
 ```
 
-Install `Powerlevel9k Theme`
+Install `Powerlevel10k Theme`
 ```
-git clone https://github.com/bhilburn/powerlevel9k.git ~/.oh-my-zsh/custom/themes/powerlevel9k
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 ```
 
 Install `zsh-syntax-highlighting Plugin`
@@ -124,24 +186,19 @@ Install `zsh-syntax-highlighting Plugin`
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 ```
 
-Edit `server_alias` inside the configuration file to server
-```
-nano .zshrc
-```
-
 Move the configuration file to server
 ```
-scp .zshrc server_alias:/home/ubuntu/
-```
-
-Install `bc` to display `load`
-```
-sudo apt-get install bc
+scp .zshrc _server_alias_:/home/_user_/
 ```
 
 Activate the configuration
 ```
 source ~/.zshrc
+```
+
+Install `bc` to display `load`
+```
+sudo apt-get install bc
 ```
 
 ## Do a System Update & Upgrade
@@ -169,7 +226,7 @@ sudo ufw app list
 
 **If using custom SSH port**: Allow custom SSH port
 ```
-sudo ufw allow custom_port
+sudo ufw allow _port_number_
 ```
 **If not using custom SSH port**: Make sure `OpenSSH` is listed under `Available applications` and then, add it to allowed list
 ```
@@ -188,7 +245,7 @@ sudo ufw status
 
 ## Add Swap Space
 
-[source](https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-16-04)
+[source](https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-20-04)
 
 Check if there is already a swap space
 ```
@@ -211,7 +268,7 @@ sudo swapon --show
 Example output
 ```
 NAME      TYPE  SIZE USED PRIO
-/swapfile file 1024M   0B   -1
+/swapfile file 1024M   0B   -2
 ```
 
 To make swap permanent
@@ -244,16 +301,20 @@ Install `landscape-common`
 sudo apt-get install landscape-common
 ```
 
-## Folder Structure
+## Create Folder Structure
 
-Websites will be created under `/home/ubuntu/www` folder
-Logs will be under `/home/ubuntu/logs`
-And apps and scripts used will be under `/home/ubuntu/apps`
+- Websites will be created under `/home/_user_/www` folder
+- Logs will be under `/home/_user_/logs`
+- Backups will be under `/home/_user_/backups`
+- Cache will be under `/home/_user_/cache`
+- Apps and scripts used will be under `/home/_user_/apps`
 
-So, under `/home/ubuntu` it should look like
+So, under `/home/_user_` it should look like
 
 ```
 +-- apps
++-- backups
++-- cache
 +-- logs
 +-- www
     +-- html
@@ -262,10 +323,12 @@ So, under `/home/ubuntu` it should look like
 
 Create the necessary folders
 ```
-mkdir /home/ubuntu/apps
-mkdir /home/ubuntu/logs
-mkdir /home/ubuntu/www
-mkdir /home/ubuntu/www/html
+mkdir /home/_user_/apps
+mkdir /home/_user_/backups
+mkdir /home/_user_/cache
+mkdir /home/_user_/logs
+mkdir /home/_user_/www
+mkdir /home/_user_/www/html
 ```
 
 **NEXT STEP** -> [Install LEMP Stack](Install%20LEMP.md)

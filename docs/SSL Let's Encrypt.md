@@ -1,8 +1,6 @@
 - [Intial Setup](Initial%20Setup.md)
 - [Install LEMP Stack](Install%20LEMP.md)
-- [Tweaking](Tweaking.md)
 - [Wordpress](Wordpress.md)
-- [System Monitoring](System%20Monitoring.md)
 - **SSL Let's Encrypt**
 - [Automation](Automation.md)
 
@@ -10,16 +8,18 @@
 
 [source](https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-16-04)
 
-## Install Let's Encrypt Client
+## Install Certbot
 
 ```
-sudo apt-get update
-sudo apt-get install letsencrypt
+sudo apt install software-properties-common
+sudo add-apt-repository universe
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
 ```
 
 Now, get the SSL certificate with following command
 ```
-sudo letsencrypt certonly -a webroot --webroot-path=/home/ubuntu/www/domain_name -d domain_name -d www.domain_name
+sudo certbot --nginx certonly -d _domain_name_ -d www._domain_name_
 ```
 
 ## Generate Strong Diffie-Hellman Group
@@ -33,26 +33,13 @@ sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
 
 Reconfigure the nginx.conf of the website, according to `template.conf`
 
-**Note**: `domain_name` is the website's domain name without `www` in the beginning.
+**Note**: `_domain_name_` is the website's domain name without `www` in the beginning.
 ```
-cp /etc/nginx/sites-available/template.conf /etc/nginx/sites-available/domain_name.conf
-sudo nano /etc/nginx/sites-available/domain_name.conf
-```
-
-Change all instances of `domain_name` in the file with the website address
-
-## Adjust the Firewall
-
-Check the firewall
-```
-sudo ufw status
+cp /etc/nginx/sites-available/template.conf /etc/nginx/sites-available/_domain_name_.conf
+sudo nano /etc/nginx/sites-available/_domain_name_.conf
 ```
 
-If `Nginx Full` is allowed, then proceed to the next step, if `Nginx HTTP` is allowed instead, enter the following lines
-```
-sudo ufw allow 'Nginx Full'
-sudo ufw delete allow 'Nginx HTTP'
-```
+Change all instances of `_domain_name_` in the file with the website address
 
 ## Enable the Changes & Test
 
@@ -68,7 +55,7 @@ sudo service nginx reload
 
 Test the SSL certificate, this setup should get an A+
 ```
-https://www.ssllabs.com/ssltest/analyze.html?d=domain_name
+https://www.ssllabs.com/ssltest/analyze.html?d=_domain_name_
 ```
 
 ## Setup Auto Renewal
@@ -90,10 +77,10 @@ sudo crontab -e
 And add these lines
 ```
 # Let's Encrypt Certificate Renewal
-30 0 * * 1 /usr/bin/letsencrypt renew >> /home/ubuntu/logs/le-renew.log
+30 0 * * 1 /usr/bin/letsencrypt renew >> /home/_user_/logs/le-renew.log
 35 0 * * 1 /bin/systemctl reload nginx
 ```
 
-This will create a new cron job that will execute the `letsencrypt renew` command every Monday at 0:30, and reload Nginx at 0:35 (so the renewed certificate will be used). The output produced by the command will be piped to a log file located at `/home/ubuntu/logs/le-renewal.log`.
+This will create a new cron job that will execute the `letsencrypt renew` command every Monday at 0:30, and reload Nginx at 0:35 (so the renewed certificate will be used). The output produced by the command will be piped to a log file located at `/home/_user_/logs/le-renewal.log`.
 
 **NEXT STEP** -> [Automation](Automation.md)

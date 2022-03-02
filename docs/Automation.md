@@ -1,8 +1,6 @@
 - [Intial Setup](Initial%20Setup.md)
 - [Install LEMP Stack](Install%20LEMP.md)
-- [Tweaking](Tweaking.md)
 - [Wordpress](Wordpress.md)
-- [System Monitoring](System%20Monitoring.md)
 - [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
 - **Automation**
 
@@ -18,21 +16,21 @@ mkdir ~/backups
 mkdir ~/backups/website_folder_name
 ```
 
-Upload `backup` folder to the server inside apps folder
+Upload `apps` folder to the server inside the user folder
 ```
-scp -r backup server_alias:/home/ubuntu/apps/
+scp -r apps _server_alias_:/home/_user_/
 ```
 
 Create a new file using `backup_template.sh`
 ```
-cp apps/backup/backup_template.sh apps/backup/site-website_folder_name.sh
+cp ~/apps/backup/backup_template.sh ~/apps/backup/site-website_folder_name.sh
 ```
 
 **How it works**: *`backup_template.sh` includes the variables for the websites, it backs up the website folder including the database inside the main directory.*
 
 Edit website variables
 ```
-nano backups/website_folder_name.sh
+nano ~/apps/backup/site-website_folder_name.sh
 ```
 
 Save it and close.
@@ -50,9 +48,9 @@ sudo crontab -e
 And add these lines
 ```
 # Wordpress Auto Backup
-00 2 * * * sh /home/ubuntu/apps/backup/backup-daily.sh >> /home/ubuntu/logs/backup.log 2>&1
-30 2 * * 1 sh /home/ubuntu/apps/backup/backup-weekly.sh >> /home/ubuntu/logs/backup.log 2>&1
-00 3 1 * * sh /home/ubuntu/apps/backup/backup-monthly.sh >> /home/ubuntu/logs/backup.log 2>&1
+00 2 * * * sh /home/_user_/apps/backup/backup-daily.sh >> /home/_user_/logs/backup.log 2>&1
+30 2 * * 1 sh /home/_user_/apps/backup/backup-weekly.sh >> /home/_user_/logs/backup.log 2>&1
+00 3 1 * * sh /home/_user_/apps/backup/backup-monthly.sh >> /home/_user_/logs/backup.log 2>&1
 ```
 
-This will create a new cron job that will execute `backup-daily.sh` command everyday at 2:00, `backup-weekly.sh` command every Monday at 2:30 and `backup-monthly.sh` command on 1st day of every month at 3:00. The output produced by the commands will be piped to a log file located at `/home/ubuntu/logs/backup.log`.
+This will create a new cron job that will execute `backup-daily.sh` command everyday at 2:00, `backup-weekly.sh` command every Monday at 2:30 and `backup-monthly.sh` command on 1st day of every month at 3:00. The output produced by the commands will be piped to a log file located at `/home/_user_/logs/backup.log`.

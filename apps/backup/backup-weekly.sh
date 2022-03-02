@@ -7,10 +7,10 @@ export THEDATE
 export THEFREQ
 
 # Go to main directory
-cd /home/ubuntu/www/
+cd /home/_user_/www/
 
 # List of Websites
-sh /home/ubuntu/apps/backup/backup_template.sh
+# sh /home/_user_/apps/backup/backup_template.sh
 
 # Remove all the backups older than 3 months
-sudo find /home/ubuntu/backups/ -name \*_weekly_\* -mtime +91 -exec rm {} \;
+sudo find /home/_user_/backups/ -name \*_weekly_\* -mtime +91 -exec rm {} \;
