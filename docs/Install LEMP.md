@@ -18,44 +18,37 @@ sudo apt update
 
 Install php
 ```
-sudo apt install php8.0-fpm php8.0-common php8.0-mysql \
-php8.0-xml php8.0-xmlrpc php8.0-curl php8.0-gd \
-php8.0-imagick php8.0-cli php8.0-dev php8.0-imap \
-php8.0-mbstring php8.0-opcache php8.0-redis \
-php8.0-soap php8.0-zip -y
+sudo apt install php8.1-fpm php8.1-common php8.1-mysql \
+php8.1-xml php8.1-xmlrpc php8.1-curl php8.1-gd \
+php8.1-imagick php8.1-cli php8.1-dev php8.1-imap \
+php8.1-mbstring php8.1-opcache php8.1-redis \
+php8.1-soap php8.1-zip -y
 ```
 
 Configure php-fpm
 
 ```
-sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.0/fpm/pool.d/www.conf
-sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.0/fpm/php.ini
-sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 128M/" /etc/php/8.0/fpm/php.ini
-sudo sed -i "s/post_max_size = .*/post_max_size = 128M/" /etc/php/8.0/fpm/php.ini
+sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.1/fpm/pool.d/www.conf
+sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.1/fpm/php.ini
+sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 256M/" /etc/php/8.1/fpm/php.ini
+sudo sed -i "s/post_max_size = .*/post_max_size = 256M/" /etc/php/8.1/fpm/php.ini
 ```
 
 Check that the configuration file syntax is correct
 ```
-sudo php-fpm8.0 -t
+sudo php-fpm8.1 -t
 ```
 
 Restart php-fpm
 ```
-sudo service php8.0-fpm restart
+sudo service php8.1-fpm restart
 ```
 
 ## Install MariaDB
 
-Add the repository and update the package lists
-```
-sudo apt-get install software-properties-common
-sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
-sudo add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://mirrors.up.pt/pub/mariadb/repo/10.4/ubuntu focal main'
-```
-
 Install MariaDB
 ```
-sudo apt install mariadb-server -y
+sudo apt install mariadb-server
 ```
 
 Secure the installation
@@ -176,7 +169,7 @@ sudo service nginx restart
 
 ```
 sudo apt install redis-server
-sudo service php8.0-fpm restart
+sudo service php8.1-fpm restart
 ```
 
 **NEXT STEP** -> [Wordpress](Wordpress.md)
