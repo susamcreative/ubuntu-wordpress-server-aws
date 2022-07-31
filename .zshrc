@@ -8,7 +8,7 @@ export ZSH=/home/_user_/.oh-my-zsh
 
 POWERLEVEL9K_MODE='nerdfont-fontconfig'
 
-POWERLEVEL9K_CUSTOM_CONTEXT="print 'server_alias'"
+POWERLEVEL9K_CUSTOM_CONTEXT="print '_server_alias_'"
 
 DISABLE_AUTO_TITLE="true"
 POWERLEVEL9K_VCS_STAGED_ICON='\u00b1'
