@@ -150,6 +150,11 @@ In order for Nginx to correctly serve PHP you also need to ensure the `fastcgi_p
 sudo nano /etc/nginx/fastcgi_params
 ```
 
+Due to changes in Ubuntu 22.04 in order to give permissions to nginx to reach www folder:
+```
+gpasswd -a www-data _user_
+```
+
 Ensure the following directive exists, if not add it to the file:
 ```
 fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
