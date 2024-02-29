@@ -54,3 +54,18 @@ And add these lines
 ```
 
 This will create a new cron job that will execute `backup-daily.sh` command everyday at 2:00, `backup-weekly.sh` command every Monday at 2:30 and `backup-monthly.sh` command on 1st day of every month at 3:00. The output produced by the commands will be piped to a log file located at `/home/_user_/logs/backup.log`.
+
+
+## Automate Log Cleaning
+
+Logs left unattended can grow big in size. In order to clean them up, we will utilize logrotate.
+
+Move the site-logs file to the server.
+```
+scp site-logs _server_alias_:/home/_user_/
+```
+
+Move the file to the right location.
+```
+mv /home/_user_/site-logs /etc/logrotate.d/
+```

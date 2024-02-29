@@ -243,6 +243,12 @@ Check status of the Firewall
 sudo ufw status
 ```
 
+We can increase security by rate limiting using Fail2ban
+```
+sudo apt install fail2ban
+sudo service fail2ban start
+```
+
 ## Add Swap Space
 
 [source](https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-20-04)

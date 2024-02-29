@@ -1,0 +1,14 @@
+/home/_user_/logs/*.log {
+    daily
+    rotate 14
+    size 1M
+    compress
+    missingok
+    notifempty
+    dateext
+    create 0664 pluto pluto
+    sharedscripts
+    postrotate
+        invoke-rc.d nginx rotate >/dev/null 2>&1
+    endscript
+}
