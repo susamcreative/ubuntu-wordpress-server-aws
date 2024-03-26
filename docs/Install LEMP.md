@@ -32,6 +32,7 @@ sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.3/fpm/pool.d
 sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.3/fpm/php.ini
 sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" /etc/php/8.3/fpm/php.ini
 sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" /etc/php/8.3/fpm/php.ini
+sudo sed -i "s/max_execution_time = .*/max_execution_time = 180/" /etc/php/8.3/fpm/php.ini
 ```
 
 Check that the configuration file syntax is correct
