@@ -1,9 +1,15 @@
 # Catch-all server block, resulting in a 444 response for unknown domains.
 
 server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
-	server_name _;
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name _;
+  return 404;
+}
 
-	return 444;
+server {
+  listen 443 ssl default_server;
+  listen [::]:443 ssl default_server;
+  server_name _;
+  ssl_reject_handshake on;
 }
