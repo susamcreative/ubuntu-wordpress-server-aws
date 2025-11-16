@@ -8,15 +8,18 @@
 
 [source](https://www.digitalocean.com/community/tutorials/how-to-install-wordpress-with-lemp-on-ubuntu-20-04)
 
-## Set up a Domain on Route 53 [#](https://console.aws.amazon.com/route53/home)
+## Configure DNS Records
 
-Make sure you have the following records
+Using your domain's DNS management panel (your hosting provider, Cloudflare, or domain registrar), create the following records:
+
 ```
-A website_address server_ip
-CNAME *.website_address website_address
+A     example.com           your_server_ip
+CNAME www.example.com       example.com
 ```
 
-Then create MX, TXT records if needed.
+If you use email services with this domain, also create appropriate MX and TXT records as needed.
+
+**Note**: DNS propagation can take up to 48 hours, but usually completes within minutes to a few hours. You can check propagation status with `dig example.com` or online DNS checkers.
 
 ## Create nginx Configuration
 
