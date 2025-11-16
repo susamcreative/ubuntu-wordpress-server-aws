@@ -49,9 +49,15 @@ sudo service php8.4-fpm restart
 
 ## Install MariaDB
 
-Install MariaDB
+Add the MariaDB repository for the latest LTS version
 ```
-sudo apt install mariadb-server
+curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=11.8
+```
+
+Install MariaDB 11.8 LTS
+```
+sudo apt update
+sudo apt install mariadb-server mariadb-client
 ```
 
 Secure the installation
@@ -66,7 +72,9 @@ Choose a password and don't forget to save it.
 - Type `y` to remove anonymous users.
 - Type `y` to disallow root login remotely.
 - Type `y` to remove test database and access to it.
-- Type `y` to reload privilage tables.
+- Type `y` to reload privilege tables.
+
+**Note**: MariaDB 11.8 LTS was released in June 2025 and is supported until June 2028. This version includes vector search support, extended timestamp range (Year 2038 fix), and utf8mb4 as the default character set.
 
 ## Install Nginx
 
