@@ -117,11 +117,16 @@ chmod 600 .ssh/authorized_keys
 nano .ssh/authorized_keys
 ```
 
-Paste the public key you retrieved, save and close the file
+Paste your SSH public key (the same one you used when creating the server), save and close the file
 
-Login to the server with your new user
+Login to the server with your new user:
 ```
-ssh -i _ssh_key_ -p _port_number_ _user_@_ip_of_the_server_
+ssh _user_@_ip_of_the_server_
+```
+
+Or with custom port:
+```
+ssh -p _port_number_ _user_@_ip_of_the_server_
 ```
 
 Remove the ubuntu user
