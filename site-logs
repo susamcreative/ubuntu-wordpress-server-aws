@@ -6,7 +6,7 @@
     missingok
     notifempty
     dateext
-    create 0664 pluto pluto
+    create 0664 _user_ _user_
     sharedscripts
     postrotate
         invoke-rc.d nginx rotate >/dev/null 2>&1
