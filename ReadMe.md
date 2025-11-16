@@ -1,15 +1,31 @@
-# Ubuntu Wordpress Server
+# Ubuntu WordPress Server
 
-In this repository, you can find wordpress optimized configurations for nginx including the support for SSL. It also includes a config file for oh-my-zsh and simple backup scripts for wordpress.
+Production-ready WordPress hosting on Ubuntu 24.04 LTS with Nginx, PHP 8.4, MariaDB 11.8, and Redis.
 
-Usage of all the files is included in the documentation, but it is prepared for a setup on Amazon AWS. If you want to setup your server on other platforms, you can still use the files, but the server setup would be a little different.
+This repository provides optimized configurations for nginx (with SSL/TLS), oh-my-zsh terminal customization, and automated backup scripts for WordPress.
 
-PS: Don't forget that the version of the software used on this guide might have changed with time, so make sure you make the necessary adjustments on the commands.
+The documentation is platform-agnostic and works with any VPS provider (Hetzner, DigitalOcean, Vultr, AWS, etc.).
 
-## EC2 Ubuntu Wordpress Server Setup
+## Documentation
 
-- [Intial Setup](docs/Initial%20Setup.md)
-- [Install LEMP Stack](docs/Install%20LEMP.md)
-- [Wordpress](docs/Wordpress.md)
-- [SSL Let's Encrypt](docs/SSL%20Let's%20Encrypt.md)
-- [Automation](docs/Automation.md)
+### Core Setup (Follow in Order)
+
+1. [Initial Setup](docs/Initial%20Setup.md) - Server creation and initial configuration
+2. [Install LEMP Stack](docs/Install%20LEMP.md) - PHP, MariaDB, Nginx, Redis installation
+3. [WordPress](docs/Wordpress.md) - First WordPress site setup
+4. [SSL Let's Encrypt](docs/SSL%20Let's%20Encrypt.md) - Free SSL certificates
+5. [Automation](docs/Automation.md) - Automated backups and maintenance
+
+### Additional Workflows
+
+- [Add Another Site](docs/Add%20Another%20Site.md) - Quick workflow for additional sites
+- [Migrate Existing Site](docs/Migrate%20Existing%20Site.md) - Move WordPress from another server
+
+## Stack Versions
+
+- Ubuntu 24.04 LTS
+- PHP 8.4
+- MariaDB 11.8 LTS
+- Nginx Mainline (1.29+)
+- Redis 7.0+
+- Certbot (APT-based)
