@@ -58,29 +58,68 @@ Test the SSL certificate, this setup should get an A+
 https://www.ssllabs.com/ssltest/analyze.html?d=_domain_name_
 ```
 
-## Setup Auto Renewal
+## Certificate Auto-Renewal
 
-Let’s Encrypt certificates are valid for 90 days, but it’s recommended that you renew the certificates every 60 days to allow a margin of error.
+Let's Encrypt certificates are valid for 90 days, but it's recommended that you renew the certificates every 60 days to allow a margin of error.
 
-To manually trigger a renewal, following line should be entered
+### Automatic Renewal (Ubuntu 24.04)
+
+Ubuntu 24.04 automatically configures certificate renewal via systemd timer. Verify it's active:
 ```
-sudo letsencrypt renew
-```
-
-Let's Encrypt only renews certificates if it's less than 30 days away from expiration. A cron job can be created to renew the certificates when needed.
-
-To edit the crontab
-```
-sudo crontab -e
+systemctl list-timers | grep certbot
 ```
 
-And add these lines
+You should see `certbot.timer` scheduled to run twice daily.
+
+Check the timer status:
 ```
-# Let's Encrypt Certificate Renewal
-30 0 * * 1 /usr/bin/letsencrypt renew >> /home/_user_/logs/le-renew.log
-35 0 * * 1 /bin/systemctl reload nginx
+sudo systemctl status certbot.timer
 ```
 
-This will create a new cron job that will execute the `letsencrypt renew` command every Monday at 0:30, and reload Nginx at 0:35 (so the renewed certificate will be used). The output produced by the command will be piped to a log file located at `/home/_user_/logs/le-renewal.log`.
+### Manual Renewal (Testing)
+
+To manually test renewal without waiting:
+```
+sudo certbot renew --dry-run
+```
+
+To force renewal:
+```
+sudo certbot renew
+```
+
+After renewal, nginx automatically reloads via the systemd timer.
+
+### Cloudflare DNS Challenge (Optional)
+
+If you need wildcard certificates or DNS-based verification, install the Cloudflare plugin:
+```
+sudo apt install python3-certbot-dns-cloudflare
+```
+
+Create Cloudflare credentials file:
+```
+sudo mkdir -p /etc/letsencrypt/.secrets
+sudo nano /etc/letsencrypt/.secrets/cloudflare.ini
+```
+
+Add your Cloudflare API token:
+```
+dns_cloudflare_api_token = YOUR_API_TOKEN_HERE
+```
+
+Secure the file:
+```
+sudo chmod 600 /etc/letsencrypt/.secrets/cloudflare.ini
+```
+
+Obtain wildcard certificate:
+```
+sudo certbot certonly --dns-cloudflare \
+  --dns-cloudflare-credentials /etc/letsencrypt/.secrets/cloudflare.ini \
+  -d example.com -d "*.example.com"
+```
+
+**Note**: Renewal happens automatically via the systemd timer for all certificates, including DNS-validated ones.
 
 **NEXT STEP** -> [Automation](Automation.md)
