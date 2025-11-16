@@ -8,13 +8,18 @@ The documentation is platform-agnostic and works with any VPS provider (Hetzner,
 
 ## Documentation
 
-- [Initial Setup](docs/Initial%20Setup.md) - Server creation and initial configuration
-- [Install LEMP Stack](docs/Install%20LEMP.md) - PHP, MariaDB, Nginx, Redis installation
-- [WordPress](docs/Wordpress.md) - First WordPress site setup
-- [SSL Let's Encrypt](docs/SSL%20Let's%20Encrypt.md) - Free SSL certificates
+### Core Setup (Follow in Order)
+
+1. [Initial Setup](docs/Initial%20Setup.md) - Server creation and initial configuration
+2. [Install LEMP Stack](docs/Install%20LEMP.md) - PHP, MariaDB, Nginx, Redis installation
+3. [WordPress](docs/Wordpress.md) - First WordPress site setup
+4. [SSL Let's Encrypt](docs/SSL%20Let's%20Encrypt.md) - Free SSL certificates
+5. [Automation](docs/Automation.md) - Automated backups and maintenance
+
+### Additional Workflows
+
 - [Add Another Site](docs/Add%20Another%20Site.md) - Quick workflow for additional sites
 - [Migrate Existing Site](docs/Migrate%20Existing%20Site.md) - Move WordPress from another server
-- [Automation](docs/Automation.md) - Automated backups and maintenance
 
 ## Stack Versions
 

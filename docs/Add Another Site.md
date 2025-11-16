@@ -1,10 +1,6 @@
-- [Initial Setup](Initial%20Setup.md)
-- [Install LEMP Stack](Install%20LEMP.md)
-- [Wordpress](Wordpress.md)
-- [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
-- **Add Another Site**
-- [Migrate Existing Site](Migrate%20Existing%20Site.md)
-- [Automation](Automation.md)
+**Core Setup**: [Initial Setup](Initial%20Setup.md) → [Install LEMP Stack](Install%20LEMP.md) → [Wordpress](Wordpress.md) → [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md) → [Automation](Automation.md)
+
+**Additional Workflows**: **Add Another Site** | [Migrate Existing Site](Migrate%20Existing%20Site.md)
 
 # Add Another WordPress Site
 
@@ -241,4 +237,4 @@ Your new WordPress site is now live at `https://newsite.com` with:
 
 **NEXT SITE**: Repeat this process for each additional WordPress site you want to host on this server.
 
-**NEXT STEP** -> [Migrate Existing Site](Migrate%20Existing%20Site.md) or [Automation](Automation.md)
+**See Also**: [Migrate Existing Site](Migrate%20Existing%20Site.md) - Move WordPress from another server

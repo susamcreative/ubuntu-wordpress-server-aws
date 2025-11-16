@@ -122,4 +122,4 @@ sudo certbot certonly --dns-cloudflare \
 
 **Note**: Renewal happens automatically via the systemd timer for all certificates, including DNS-validated ones.
 
-**NEXT STEP** -> [Automation](Automation.md)
+**NEXT STEP** -> [Automation](Automation.md) - Set up automated backups for your site

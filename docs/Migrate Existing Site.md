@@ -1,10 +1,6 @@
-- [Initial Setup](Initial%20Setup.md)
-- [Install LEMP Stack](Install%20LEMP.md)
-- [Wordpress](Wordpress.md)
-- [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
-- [Add Another Site](Add%20Another%20Site.md)
-- **Migrate Existing Site**
-- [Automation](Automation.md)
+**Core Setup**: [Initial Setup](Initial%20Setup.md) → [Install LEMP Stack](Install%20LEMP.md) → [Wordpress](Wordpress.md) → [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md) → [Automation](Automation.md)
+
+**Additional Workflows**: [Add Another Site](Add%20Another%20Site.md) | **Migrate Existing Site**
 
 # Migrate Existing WordPress Site
 
@@ -399,4 +395,4 @@ Your WordPress site has been successfully migrated with:
 
 **Total migration time**: 1-2 hours (including testing)
 
-**NEXT STEP** -> [Automation](Automation.md) to set up backups on the new server.
+**See Also**: [Add Another Site](Add%20Another%20Site.md) - Add more sites to this server
