@@ -16,33 +16,35 @@ sudo add-apt-repository ppa:ondrej/php -y
 sudo apt update
 ```
 
-Install php
+Install PHP 8.4
 ```
-sudo apt install php8.3-fpm php8.3-common php8.3-mysql \
-php8.3-xml php8.3-xmlrpc php8.3-curl php8.3-gd \
-php8.3-imagick php8.3-cli php8.3-dev php8.3-imap \
-php8.3-mbstring php8.3-opcache php8.3-redis \
-php8.3-soap php8.3-zip -y
+sudo apt install php8.4-fpm php8.4-common php8.4-mysql \
+php8.4-xml php8.4-xmlrpc php8.4-curl php8.4-gd \
+php8.4-imagick php8.4-cli php8.4-dev php8.4-imap \
+php8.4-mbstring php8.4-opcache php8.4-redis \
+php8.4-soap php8.4-zip -y
 ```
+
+**Note**: PHP 8.4 was released in November 2024 and is production-ready. PHP 8.5 is expected in December 2025. The ondrej PPA will provide PHP 8.5 packages once stable.
 
 Configure php-fpm
 
 ```
-sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.3/fpm/pool.d/www.conf
-sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.3/fpm/php.ini
-sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" /etc/php/8.3/fpm/php.ini
-sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" /etc/php/8.3/fpm/php.ini
-sudo sed -i "s/max_execution_time = .*/max_execution_time = 180/" /etc/php/8.3/fpm/php.ini
+sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.4/fpm/pool.d/www.conf
+sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.4/fpm/php.ini
+sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" /etc/php/8.4/fpm/php.ini
+sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" /etc/php/8.4/fpm/php.ini
+sudo sed -i "s/max_execution_time = .*/max_execution_time = 180/" /etc/php/8.4/fpm/php.ini
 ```
 
 Check that the configuration file syntax is correct
 ```
-sudo php-fpm8.3 -t
+sudo php-fpm8.4 -t
 ```
 
 Restart php-fpm
 ```
-sudo service php8.3-fpm restart
+sudo service php8.4-fpm restart
 ```
 
 ## Install MariaDB
@@ -151,7 +153,7 @@ In order for Nginx to correctly serve PHP you also need to ensure the `fastcgi_p
 sudo nano /etc/nginx/fastcgi_params
 ```
 
-Due to changes in Ubuntu 22.04 in order to give permissions to nginx to reach www folder:
+Due to permission changes in Ubuntu 24.04, add nginx user to your user's group:
 ```
 gpasswd -a www-data _user_
 ```
@@ -175,7 +177,9 @@ sudo service nginx restart
 
 ```
 sudo apt install redis-server
-sudo service php8.3-fpm restart
+sudo service php8.4-fpm restart
 ```
+
+**Note**: Ubuntu 24.04 provides Redis 7.0.15, which is fully compatible with WordPress caching plugins.
 
 **NEXT STEP** -> [Wordpress](Wordpress.md)
