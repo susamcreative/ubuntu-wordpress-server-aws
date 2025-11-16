@@ -1,4 +1,4 @@
-- [Intial Setup](Initial%20Setup.md)
+- [Initial Setup](Initial%20Setup.md)
 - **Install LEMP Stack**
 - [Wordpress](Wordpress.md)
 - [SSL Let's Encrypt](SSL%20Let's%20Encrypt.md)
