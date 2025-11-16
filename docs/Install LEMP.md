@@ -82,9 +82,9 @@ Choose a password and don't forget to save it.
 [source 2](https://spinupwp.com/hosting-wordpress-yourself-nginx-php-mysql/)
 [source 3](https://codex.wordpress.org/Nginx)
 
-Add the repository and update the package lists
+Add the nginx mainline repository and update the package lists
 ```
-sudo add-apt-repository ppa:ondrej/nginx -y
+sudo add-apt-repository ppa:ondrej/nginx-mainline -y
 sudo apt update
 sudo apt dist-upgrade -y
 ```
@@ -93,6 +93,8 @@ Install nginx
 ```
 sudo apt install nginx -y
 ```
+
+**Note**: The nginx mainline branch receives all new features and bug fixes. It's recommended over the stable branch by nginx.org for production use.
 
 Allow Nginx in the firewall
 ```
