@@ -50,12 +50,17 @@ Open these documentation files in a text editor and replace all instances:
 
 ### SSH Login
 
-First, initiate the connection to your server after replacing ever instance of `_ssh_key_` with the key name you use and the `_port_number_` with your custom port number, if not replace it with `22`
+First, connect to your server:
 ```
-ssh -i _ssh_key_ ubuntu@_ip_of_the_server_
+ssh ubuntu@_ip_of_the_server_
 ```
 
-The first time you attempt to connect to your server, you will likely see a warning that looks like this:
+If using a custom SSH port, specify it with `-p`:
+```
+ssh -p _port_number_ ubuntu@_ip_of_the_server_
+```
+
+The first time you connect, you'll see a fingerprint warning:
 ```
 The authenticity of host '[_ip_of_the_server_]:_port_number_ ([_ip_of_the_server_]:_port_number_)' can't be established.
 ECDSA key fingerprint is SHA256:CsYXAxsTdjpbTwc21AlfXId/h0FSyNct3NOdDtlmJf1.
@@ -78,25 +83,11 @@ Restart SSH service
 sudo service sshd restart
 ```
 
-### Create a New User 
+### Create a New User
 
-[source](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/managing-users.html)
+**Instead of using the default user, create a new user for increased security**
 
-**Instead of using the default user, we are going to create a new user in order to increase security**
-
-Retrieve the public key from the key pair that you created
-```
-ssh-keygen -y -f .ssh/_ssh_key_
-```
-
-The command will return the public key, **copy it**, we will use this for our new user
-
-Then login to the ubuntu user using ssh
-```
-ssh -i _ssh_key_ -p _port_number_ ubuntu@_ip_of_the_server_
-```
-
-Create the new user
+First, connect to your server as ubuntu user and create the new user:
 ```
 sudo adduser _user_  --disabled-password
 ```
@@ -150,11 +141,10 @@ Create an alias using this template
 Host _server_alias_
 Hostname _ip_of_the_server_
 User _user_
-Port _port_number_ (remove the line if 22)
-IdentityFile ~/.ssh/key_pair.pem
+Port _port_number_ (remove this line if using port 22)
 ```
 
-**If you're using a custom ssh port, remove default SSH port from security group**
+**If you're using a custom SSH port, configure your firewall to allow that port and block port 22**
 
 ## Install oh-my-zsh
 

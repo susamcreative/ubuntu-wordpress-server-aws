@@ -25,8 +25,6 @@ php8.4-mbstring php8.4-opcache php8.4-redis \
 php8.4-soap php8.4-zip -y
 ```
 
-**Note**: PHP 8.4 was released in November 2024 and is production-ready. PHP 8.5 is expected in December 2025. The ondrej PPA will provide PHP 8.5 packages once stable.
-
 Configure php-fpm
 
 ```
@@ -73,8 +71,6 @@ Choose a password and don't forget to save it.
 - Type `y` to disallow root login remotely.
 - Type `y` to remove test database and access to it.
 - Type `y` to reload privilege tables.
-
-**Note**: MariaDB 11.8 LTS was released in June 2025 and is supported until June 2028. This version includes vector search support, extended timestamp range (Year 2038 fix), and utf8mb4 as the default character set.
 
 ## Install Nginx
 
@@ -189,7 +185,5 @@ sudo service nginx restart
 sudo apt install redis-server
 sudo service php8.4-fpm restart
 ```
-
-**Note**: Ubuntu 24.04 provides Redis 7.0.15, which is fully compatible with WordPress caching plugins.
 
 **NEXT STEP** -> [Wordpress](Wordpress.md)
