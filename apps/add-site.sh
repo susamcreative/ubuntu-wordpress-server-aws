@@ -1,6 +1,54 @@
 #!/bin/bash
-# Add WordPress Site
-# Usage: ./apps/add-site.sh
+#
+# Add WordPress Site - Automated WordPress site creation script
+#
+# USAGE:
+#   ./apps/add-site.sh
+#
+# DESCRIPTION:
+#   Creates a new WordPress site with database, nginx config, and SSL certificate.
+#   Includes validation, error handling, and resumable workflow.
+#
+# WHAT IT DOES:
+#   1. Validates prerequisites (nginx, MySQL, PHP, templates)
+#   2. Prompts for MySQL root password (not stored)
+#   3. Checks DNS with retry loop (offers HTTP-only if not ready)
+#   4. Creates directories, database, downloads WordPress
+#   5. Configures wp-config.php with security keys
+#   6. Sets proper permissions
+#   7. Creates nginx configuration from template
+#   8. Obtains SSL certificate (optional, doesn't fail if DNS not ready)
+#
+# FILES CREATED:
+#   ~/.add-site-credentials.txt  - Site credentials (MUST DELETE after copying)
+#   ~/.add-site.state            - Temporary state (auto-deleted on success)
+#   /tmp/.add-site.lock          - Lock file (auto-deleted on exit)
+#
+# RESUME FUNCTIONALITY:
+#   If interrupted, run script again - it will detect incomplete state
+#   and offer to resume or start fresh with automatic rollback.
+#
+# SECURITY NOTES:
+#   - MySQL password is prompted each time, never stored
+#   - Credentials saved to ~/.add-site-credentials.txt (chmod 600)
+#   - YOU MUST DELETE credentials file after copying: rm ~/.add-site-credentials.txt
+#   - State file contains sensitive data, auto-deleted on completion
+#
+# REQUIREMENTS:
+#   - LEMP stack installed (nginx, PHP, MariaDB, Redis)
+#   - Nginx templates uploaded to /etc/nginx/sites-available/
+#   - Directory structure: ~/www, ~/cache, ~/logs, ~/backups
+#   - Certbot installed for SSL (optional)
+#
+# EXAMPLES:
+#   # Normal usage
+#   ~/apps/add-site.sh
+#
+#   # If interrupted, run again to resume
+#   ~/apps/add-site.sh
+#
+#   # Clean up manually if needed
+#   rm ~/.add-site.state ~/.add-site-credentials.txt
 
 set -euo pipefail
 

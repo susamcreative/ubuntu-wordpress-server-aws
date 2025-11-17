@@ -33,7 +33,21 @@ We provide an automation script that handles all the steps below with validation
 - Database name and user
 - MySQL root password (not stored)
 
-**Note:** Credentials are saved to `~/.add-site-credentials.txt` - copy them and delete the file for security.
+**Important Files:**
+- **`~/.add-site-credentials.txt`** - Site credentials (database password, paths)
+  - **SECURITY: Copy credentials and delete this file immediately:**
+    ```bash
+    rm ~/.add-site-credentials.txt
+    ```
+- **`~/.add-site.state`** - Temporary state file for resume functionality
+  - Automatically deleted on successful completion
+  - If script is interrupted, allows resuming from where it left off
+  - To manually clean up: `rm ~/.add-site.state`
+
+**If the script is interrupted:**
+- State is preserved in `~/.add-site.state`
+- Run the script again - it will detect incomplete setup
+- Choose to resume or start fresh (with automatic rollback)
 
 ---
 
@@ -267,5 +281,53 @@ Your new WordPress site is now live at `https://newsite.com` with:
 ---
 
 **NEXT SITE**: Repeat this process for each additional WordPress site you want to host on this server.
+
+---
+
+## Troubleshooting the Automation Script
+
+### Script says "already running"
+```bash
+# Check if process is actually running
+ps aux | grep add-site.sh
+
+# If not running, remove stale lock file
+rm /tmp/.add-site.lock
+```
+
+### Script was interrupted, how do I clean up?
+```bash
+# Remove state file to start fresh
+rm ~/.add-site.state
+
+# Remove credentials file
+rm ~/.add-site-credentials.txt
+
+# Manually remove site if partially created
+# (Check what was created first)
+ls ~/www/
+mysql -u root -p -e "SHOW DATABASES;"
+```
+
+### I forgot to save the credentials
+```bash
+# Credentials are in the file until you delete it
+cat ~/.add-site-credentials.txt
+
+# Database password is also in wp-config.php
+grep DB_PASSWORD ~/www/yourdomain.com/wp-config.php
+```
+
+### DNS check keeps failing
+- Verify DNS is actually configured: `dig yourdomain.com`
+- Choose option 2 to create HTTP-only site
+- Add SSL manually later with: `sudo certbot --nginx certonly -d yourdomain.com -d www.yourdomain.com`
+
+### MySQL authentication failed
+- Ensure you're entering the correct root password
+- Test manually: `mysql -u root -p`
+- Check if MySQL is running: `sudo service mysql status`
+
+---
 
 **See Also**: [Migrate Existing Site](Migrate%20Existing%20Site.md) - Move WordPress from another server
