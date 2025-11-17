@@ -29,9 +29,16 @@ For faster setup with validation and error handling:
   - Validates prerequisites and DNS
   - Creates database, downloads WordPress
   - Configures nginx and obtains SSL
+  - Sets up automated backups
   - Resumable if interrupted
 
-The script is optional - all manual steps are documented for learning and customization.
+- **`apps/restore-backup.sh`** - Restore WordPress from backup
+  - Lists all sites and their backups
+  - Validates backup integrity
+  - Restores database and/or files
+  - Creates safety backups before restoration
+
+The scripts are optional - all manual steps are documented for learning and customization.
 
 ## Stack Versions
 
