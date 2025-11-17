@@ -32,6 +32,11 @@ For faster setup with validation and error handling:
   - Sets up automated backups
   - Resumable if interrupted
 
+- **`apps/list-sites.sh`** - Display WordPress site inventory
+  - Shows status, storage, SSL, backups, errors
+  - Compact table view or detailed reports
+  - No WP-CLI required
+
 - **`apps/restore-backup.sh`** - Restore WordPress from backup
   - Lists all sites and their backups
   - Validates backup integrity
