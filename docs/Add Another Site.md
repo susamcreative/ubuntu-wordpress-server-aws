@@ -4,15 +4,48 @@
 
 # Add Another WordPress Site
 
-Once your server is set up with the LEMP stack, adding additional WordPress sites takes only 10-15 minutes. This guide assumes you've already completed the initial server setup.
+Once your server is set up with the LEMP stack, adding additional WordPress sites is quick and straightforward. This guide assumes you've already completed the initial server setup.
+
+**Time Required:**
+- Automated: ~5 minutes
+- Manual: ~15 minutes
 
 **Prerequisites**: Server configured with nginx, PHP, MariaDB, and SSL (Certbot) installed.
 
 ---
 
+## Choosing Your Approach
+
+**Two ways to add a WordPress site:**
+
+1. **Automated Script** - Fast, validated, resumable (recommended for most users)
+2. **Manual Steps** - Educational, customizable, good for learning
+
+### When to Use Automation
+
+**Use the automated script if you:**
+- Want the fastest setup (5 minutes vs 15 minutes)
+- Need error prevention and validation
+- Want resumable workflow (in case of interruptions)
+- Are adding sites regularly
+- Trust the script to handle standard setup
+
+### When to Use Manual Steps
+
+**Follow manual steps if you:**
+- Are setting up your first WordPress site (to learn the process)
+- Need to customize the setup beyond what the script offers
+- Want to understand exactly what's happening
+- Are troubleshooting or debugging an issue
+- Prefer full control over each step
+
+**For first-time setup:** We recommend following the manual steps once to understand the process, then using automation for subsequent sites.
+
+---
+
 ## Quick Setup (Automated)
 
-We provide an automation script that handles all the steps below with validation and error checking:
+The automation script handles all the steps below with validation and error checking:
 
 ```bash
 ~/apps/add-site.sh
@@ -53,7 +86,9 @@ We provide an automation script that handles all the steps below with validation
 
 ## Manual Setup (Step by Step)
 
-If you prefer to understand each step or customize the process, follow the manual steps below.
+The following steps show you exactly how to add a WordPress site manually. This is useful for learning, customization, or troubleshooting.
+
+**Note:** Each step below is automated by the script above. If you've already run the script successfully, you can skip this section.
 
 ### Step 1: Configure DNS
 
