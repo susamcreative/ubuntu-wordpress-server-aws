@@ -10,7 +10,38 @@ Once your server is set up with the LEMP stack, adding additional WordPress site
 
 ---
 
-## Step 1: Configure DNS
+## Quick Setup (Automated)
+
+We provide an automation script that handles all the steps below with validation and error checking:
+
+```bash
+~/apps/add-site.sh
+```
+
+**What the script does:**
+- Validates prerequisites (nginx, MySQL, templates)
+- Checks DNS and offers HTTP-only option if not ready
+- Creates directories and database
+- Downloads and configures WordPress
+- Sets proper permissions
+- Creates nginx configuration with template selection
+- Obtains SSL certificate (optional)
+- Provides resumable workflow if interrupted
+
+**The script will prompt for:**
+- Domain name
+- Database name and user
+- MySQL root password (not stored)
+
+**Note:** Credentials are saved to `~/.add-site-credentials.txt` - copy them and delete the file for security.
+
+---
+
+## Manual Setup (Step by Step)
+
+If you prefer to understand each step or customize the process, follow the manual steps below.
+
+### Step 1: Configure DNS
 
 Before starting, point your domain to your server's IP address using your DNS provider:
 
