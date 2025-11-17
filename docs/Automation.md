@@ -10,54 +10,109 @@
 
 # Automation
 
-## Wordpress Backup Script
+## WordPress Backup Script
 
-[source](http://lifehacker.com/5885392/automatically-back-up-your-web-site-every-night)
+The backup system uses a single consolidated script (`backup.sh`) that manages all site backups with cascading frequency logic.
 
-Create the necessary folders for backups and create folders for every website
+### How It Works
+
+**Automated Configuration**: Sites are automatically added to the backup configuration when using `add-site.sh`. The script prompts for backup frequency (daily, weekly, or monthly) and adds the site to the configuration.
+
+**Cascading Backup Logic**:
+- **Daily backups** → backs up sites configured as "daily"
+- **Weekly backups** → backs up sites configured as "daily" OR "weekly"
+- **Monthly backups** → backs up ALL sites (daily, weekly, AND monthly)
+
+This ensures that every site gets at least monthly backups, while critical sites can receive daily backups.
+
+**Security**: Database credentials are read from each site's `wp-config.php` on-the-fly. No credentials are stored in the backup script.
+
+**Retention Policy**:
+- Daily backups: 31 days (4 weeks)
+- Weekly backups: 91 days (3 months)
+- Monthly backups: 366 days (12 months)
+
+### Manual Site Configuration
+
+If you need to manually add a site to backups (not using `add-site.sh`), edit the backup script:
+
+```bash
+nano ~/apps/backup.sh
 ```
-mkdir ~/backups
-mkdir ~/backups/website_folder_name
+
+Add your site to the SITES array:
+```bash
+SITES=(
+    "example.com:daily"
+    "anothersite.com:weekly"
+    "testsite.dev:monthly"
+)
 ```
 
-Upload `apps` folder to the server inside the user folder
-```
-scp -r apps _server_alias_:/home/_user_/
-```
+**Format**: `"domain:frequency"` where frequency is `daily`, `weekly`, or `monthly`
 
-Create a new file using `backup_template.sh`
-```
-cp ~/apps/backup/backup_template.sh ~/apps/backup/site-website_folder_name.sh
+Make sure the backup directory exists:
+```bash
+mkdir -p ~/backups/yourdomain.com
 ```
 
-**How it works**: *`backup_template.sh` includes the variables for the websites, it backs up the website folder including the database inside the main directory.*
+### Testing Backups
 
-Edit website variables
+Run a manual backup to test:
+```bash
+# Test daily backup
+~/apps/backup.sh daily
+
+# Test weekly backup
+~/apps/backup.sh weekly
+
+# Test monthly backup
+~/apps/backup.sh monthly
 ```
-nano ~/apps/backup/site-website_folder_name.sh
+
+Check the backup was created:
+```bash
+ls -lah ~/backups/yourdomain.com/
 ```
 
-Save it and close.
-After repeating this procedure for every website that needs to be backed up, include them inside `backup-daily.sh`, `backup-weekly.sh` or `backup-monthly` depending on your needs.
+## Automate WordPress Backups
 
-**How it works**: *`backup-daily.sh` or other variants run the website scripts that was specified and remove the old backups.*
-
-## Automate Wordpress Backups
-
-Create a crontab entry to run `backup-daily.sh`, `backup-weekly.sh` and `backup-monthly`
+Create a crontab entry to run the backup script on schedule:
 ```
 sudo crontab -e
 ```
 
-And add these lines
+Add these lines:
 ```
-# Wordpress Auto Backup
-00 2 * * * sh /home/_user_/apps/backup/backup-daily.sh >> /home/_user_/logs/backup.log 2>&1
-30 2 * * 1 sh /home/_user_/apps/backup/backup-weekly.sh >> /home/_user_/logs/backup.log 2>&1
-00 3 1 * * sh /home/_user_/apps/backup/backup-monthly.sh >> /home/_user_/logs/backup.log 2>&1
+# WordPress Auto Backup
+00 2 * * * /home/_user_/apps/backup.sh daily >> /home/_user_/logs/backup.log 2>&1
+30 2 * * 1 /home/_user_/apps/backup.sh weekly >> /home/_user_/logs/backup.log 2>&1
+00 3 1 * * /home/_user_/apps/backup.sh monthly >> /home/_user_/logs/backup.log 2>&1
 ```
 
-This will create a new cron job that will execute `backup-daily.sh` command everyday at 2:00, `backup-weekly.sh` command every Monday at 2:30 and `backup-monthly.sh` command on 1st day of every month at 3:00. The output produced by the commands will be piped to a log file located at `/home/_user_/logs/backup.log`.
+This will execute:
+- **Daily backups**: Every day at 2:00 AM
+- **Weekly backups**: Every Monday at 2:30 AM
+- **Monthly backups**: 1st day of each month at 3:00 AM
+
+All output is logged to `/home/_user_/logs/backup.log`.
+
+### Monitoring Backups
+
+Check backup status for all sites:
+```bash
+~/apps/list-sites.sh
+```
+
+View backup log:
+```bash
+tail -f ~/logs/backup.log
+```
+
+Check recent backups for a specific site:
+```bash
+ls -lht ~/backups/yourdomain.com/ | head -10
+```
 
 
 ## Automate Log Cleaning

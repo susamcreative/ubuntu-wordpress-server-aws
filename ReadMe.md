@@ -29,7 +29,7 @@ For faster setup with validation and error handling:
   - Validates prerequisites and DNS
   - Creates database, downloads WordPress
   - Configures nginx and obtains SSL
-  - Sets up automated backups
+  - Adds site to consolidated backup configuration
   - Resumable if interrupted
 
 - **`apps/list-sites.sh`** - Display WordPress site inventory
@@ -42,6 +42,12 @@ For faster setup with validation and error handling:
   - Validates backup integrity
   - Restores database and/or files
   - Creates safety backups before restoration
+
+- **`apps/backup.sh`** - Consolidated backup system
+  - Single script for all site backups
+  - Cascading frequency logic (daily/weekly/monthly)
+  - Reads credentials from wp-config.php on-the-fly
+  - Automatic cleanup of old backups
 
 The scripts are optional - all manual steps are documented for learning and customization.
 
