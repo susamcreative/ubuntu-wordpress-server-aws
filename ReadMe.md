@@ -49,6 +49,19 @@ For faster setup with validation and error handling:
   - Reads credentials from wp-config.php on-the-fly
   - Automatic cleanup of old backups
 
+- **`apps/setup-staging-nginx.sh`** - Configure nginx/SSL for staging sites
+  - Auto-discovers staging WordPress installations
+  - Creates nginx configuration without caching
+  - Smart SSL certificate detection (wildcard or specific)
+  - Blocks search engines automatically
+  - Works with any cloning plugin (WP Time Capsule, WP Staging, Duplicator, etc.)
+
+- **`apps/remove-staging.sh`** - Remove staging site completely
+  - Safely removes nginx config, SSL, database, and files
+  - Extracts database credentials from wp-config.php
+  - Multiple confirmation prompts for safety
+  - Preserves wildcard certificates if in use
+
 The scripts are optional - all manual steps are documented for learning and customization.
 
 ## Stack Versions
