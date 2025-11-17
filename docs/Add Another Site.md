@@ -4,13 +4,93 @@
 
 # Add Another WordPress Site
 
-Once your server is set up with the LEMP stack, adding additional WordPress sites takes only 10-15 minutes. This guide assumes you've already completed the initial server setup.
+Once your server is set up with the LEMP stack, adding additional WordPress sites is quick and straightforward. This guide assumes you've already completed the initial server setup.
+
+**Time Required:**
+- Automated: ~5 minutes
+- Manual: ~15 minutes
 
 **Prerequisites**: Server configured with nginx, PHP, MariaDB, and SSL (Certbot) installed.
 
 ---
 
-## Step 1: Configure DNS
+## Choosing Your Approach
+
+**Two ways to add a WordPress site:**
+
+1. **Automated Script** - Fast, validated, resumable (recommended for most users)
+2. **Manual Steps** - Educational, customizable, good for learning
+
+### When to Use Automation
+
+**Use the automated script if you:**
+- Want the fastest setup (5 minutes vs 15 minutes)
+- Need error prevention and validation
+- Want resumable workflow (in case of interruptions)
+- Are adding sites regularly
+- Trust the script to handle standard setup
+
+### When to Use Manual Steps
+
+**Follow manual steps if you:**
+- Are setting up your first WordPress site (to learn the process)
+- Need to customize the setup beyond what the script offers
+- Want to understand exactly what's happening
+- Are troubleshooting or debugging an issue
+- Prefer full control over each step
+
+**For first-time setup:** We recommend following the manual steps once to understand the process, then using automation for subsequent sites.
+
+---
+
+## Quick Setup (Automated)
+
+The automation script handles all the steps below with validation and error checking:
+
+```bash
+~/apps/add-site.sh
+```
+
+**What the script does:**
+- Validates prerequisites (nginx, MySQL, templates)
+- Checks DNS and offers HTTP-only option if not ready
+- Creates directories and database
+- Downloads and configures WordPress
+- Sets proper permissions
+- Creates nginx configuration with template selection
+- Obtains SSL certificate (optional)
+- Provides resumable workflow if interrupted
+
+**The script will prompt for:**
+- Domain name
+- Database name and user
+- MySQL root password (not stored)
+
+**Important Files:**
+- **`~/.add-site-credentials.txt`** - Site credentials (database password, paths)
+  - **SECURITY: Copy credentials and delete this file immediately:**
+    ```bash
+    rm ~/.add-site-credentials.txt
+    ```
+- **`~/.add-site.state`** - Temporary state file for resume functionality
+  - Automatically deleted on successful completion
+  - If script is interrupted, allows resuming from where it left off
+  - To manually clean up: `rm ~/.add-site.state`
+
+**If the script is interrupted:**
+- State is preserved in `~/.add-site.state`
+- Run the script again - it will detect incomplete setup
+- Choose to resume or start fresh (with automatic rollback)
+
+---
+
+## Manual Setup (Step by Step)
+
+The following steps show you exactly how to add a WordPress site manually. This is useful for learning, customization, or troubleshooting.
+
+**Note:** Each step below is automated by the script above. If you've already run the script successfully, you can skip this section.
+
+### Step 1: Configure DNS
 
 Before starting, point your domain to your server's IP address using your DNS provider:
 
@@ -236,5 +316,53 @@ Your new WordPress site is now live at `https://newsite.com` with:
 ---
 
 **NEXT SITE**: Repeat this process for each additional WordPress site you want to host on this server.
+
+---
+
+## Troubleshooting the Automation Script
+
+### Script says "already running"
+```bash
+# Check if process is actually running
+ps aux | grep add-site.sh
+
+# If not running, remove stale lock file
+rm /tmp/.add-site.lock
+```
+
+### Script was interrupted, how do I clean up?
+```bash
+# Remove state file to start fresh
+rm ~/.add-site.state
+
+# Remove credentials file
+rm ~/.add-site-credentials.txt
+
+# Manually remove site if partially created
+# (Check what was created first)
+ls ~/www/
+mysql -u root -p -e "SHOW DATABASES;"
+```
+
+### I forgot to save the credentials
+```bash
+# Credentials are in the file until you delete it
+cat ~/.add-site-credentials.txt
+
+# Database password is also in wp-config.php
+grep DB_PASSWORD ~/www/yourdomain.com/wp-config.php
+```
+
+### DNS check keeps failing
+- Verify DNS is actually configured: `dig yourdomain.com`
+- Choose option 2 to create HTTP-only site
+- Add SSL manually later with: `sudo certbot --nginx certonly -d yourdomain.com -d www.yourdomain.com`
+
+### MySQL authentication failed
+- Ensure you're entering the correct root password
+- Test manually: `mysql -u root -p`
+- Check if MySQL is running: `sudo service mysql status`
+
+---
 
 **See Also**: [Migrate Existing Site](Migrate%20Existing%20Site.md) - Move WordPress from another server

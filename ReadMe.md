@@ -21,6 +21,18 @@ The documentation is platform-agnostic and works with any VPS provider (Hetzner,
 - [Add Another Site](docs/Add%20Another%20Site.md) - Quick workflow for additional sites
 - [Migrate Existing Site](docs/Migrate%20Existing%20Site.md) - Move WordPress from another server
 
+## Automation Scripts
+
+For faster setup with validation and error handling:
+
+- **`apps/add-site.sh`** - Automated WordPress site creation
+  - Validates prerequisites and DNS
+  - Creates database, downloads WordPress
+  - Configures nginx and obtains SSL
+  - Resumable if interrupted
+
+The script is optional - all manual steps are documented for learning and customization.
+
 ## Stack Versions
 
 - Ubuntu 24.04 LTS
