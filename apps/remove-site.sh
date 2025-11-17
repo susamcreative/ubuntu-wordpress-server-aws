@@ -44,6 +44,9 @@
 #   --remove-backups       Auto-confirm backup removal (requires --force)
 #   --preserve-backups     Keep backups in place (default in interactive mode)
 #
+# ENVIRONMENT VARIABLES:
+#   MYSQL_ROOT_PASSWORD    MySQL root password (required for --force --remove-database)
+#
 # REQUIREMENTS:
 #   - MySQL root password (for database deletion)
 #   - sudo access for nginx operations
@@ -59,13 +62,13 @@
 #   ./apps/remove-site.sh example.com --dry-run
 #
 #   # Force mode (no confirmations - DANGEROUS!)
-#   ./apps/remove-site.sh example.com --force --remove-database --remove-files
+#   MYSQL_ROOT_PASSWORD='your-password' ./apps/remove-site.sh example.com --force --remove-database --remove-files
 #
 # NOTES:
 #   - This is PERMANENT - files and database cannot be recovered
 #   - Wildcard SSL certificates are preserved (may be used by other staging sites)
 #   - Always removes staging sites first before removing production sites
-#   - All operations are logged to ~/.remove-site.log
+#   - All operations are logged to ~/logs/remove-site.log
 
 set -euo pipefail
 
@@ -79,7 +82,7 @@ CACHE_ROOT="/home/${USER}/cache"
 LOGS_ROOT="/home/${USER}/logs"
 BACKUP_ROOT="/home/${USER}/backups"
 BACKUP_SCRIPT="/home/${USER}/apps/backup.sh"
-LOG_FILE="$HOME/.remove-site.log"
+LOG_FILE="${LOGS_ROOT}/remove-site.log"
 
 # Colors
 RED='\033[0;31m'
@@ -97,13 +100,15 @@ CONFIRM_DATABASE=false
 CONFIRM_FILES=false
 CONFIRM_BACKUPS=false
 PRESERVE_BACKUPS=false
+ARCHIVE_BACKUPS=false
 
 #=============================================================================
 # LOGGING
 #=============================================================================
 
 log_operation() {
-    # Ensure log file exists
+    # Ensure logs directory and log file exist
+    mkdir -p "$LOGS_ROOT" 2>/dev/null || true
     touch "$LOG_FILE" 2>/dev/null || true
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE" 2>/dev/null || true
 }
@@ -355,6 +360,16 @@ main() {
 
     if [ -z "$domain" ]; then
         error_exit "No domain specified"
+    fi
+
+    # Validate domain format (basic check to prevent injection/traversal)
+    if [[ ! "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$ ]]; then
+        error_exit "Invalid domain format: $domain"
+    fi
+
+    # Additional safety check: no path traversal characters
+    if [[ "$domain" == *".."* ]] || [[ "$domain" == *"/"* ]]; then
+        error_exit "Domain contains invalid characters: $domain"
     fi
 
     log_operation "Attempting to remove domain: $domain"
@@ -775,9 +790,19 @@ This prevents orphaned staging configurations."
     echo "[${step}/${total_steps}] Handling database..."
     if [ "$CONFIRM_DATABASE" = true ] && [ "$DB_NAME" != "N/A" ] && [ -n "$DB_NAME" ]; then
         # Get MySQL password if not already provided
-        if [ -z "$mysql_root_pass" ] && [ "$FORCE_MODE" = true ]; then
-            read -sp "Enter MySQL root password: " mysql_root_pass
-            echo ""
+        if [ -z "$mysql_root_pass" ]; then
+            if [ "$FORCE_MODE" = true ]; then
+                # In force mode, check for environment variable
+                if [ -n "${MYSQL_ROOT_PASSWORD:-}" ]; then
+                    mysql_root_pass="$MYSQL_ROOT_PASSWORD"
+                else
+                    error_exit "Force mode requires MYSQL_ROOT_PASSWORD environment variable for database deletion"
+                fi
+            else
+                # This should not happen as password was collected earlier, but just in case
+                read -sp "Enter MySQL root password: " mysql_root_pass
+                echo ""
+            fi
         fi
 
         if mysql -p"${mysql_root_pass}" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null; then
