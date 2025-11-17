@@ -128,3 +128,107 @@ Move the file to the right location.
 ```
 mv /home/_user_/site-logs /etc/logrotate.d/
 ```
+
+
+## WordPress Health & SSL Monitoring
+
+The health check script (`health-check.sh`) monitors server and site health, SSL certificate expiration, and backup freshness. It can send webhook notifications when issues are detected.
+
+### What It Monitors
+
+**System Health:**
+- Disk space (/, /var, /tmp) - Warns at 80%, critical at 90%
+- MySQL service status and database connectivity
+- Nginx service status and configuration validity
+- PHP-FPM service status (auto-detects version)
+- Redis service status and connectivity
+
+**Site Health (per WordPress site):**
+- HTTP availability (checks for 200/301/302 responses)
+- SSL certificate expiration (warns at 30 days, critical at 7 days)
+- Backup freshness based on configured frequency
+- Error log entries from last 24 hours (warns at 10+, critical at 50+)
+- Database connectivity per site
+
+**SSL & Backups:**
+- SSL renewal failures (parses certbot logs)
+- Backup cron job execution status
+
+### Webhook Notifications
+
+Configure webhook notifications by editing the script:
+
+```bash
+nano ~/apps/health-check.sh
+```
+
+Set your webhook URL:
+```bash
+WEBHOOK_URL="https://hook.make.com/your-webhook-id"
+```
+
+The script sends JSON payloads with issue details. Works with Make.com, Zapier, n8n, or custom endpoints.
+
+**Alert Throttling:** The same alert won't be sent more than once per 24 hours unless severity increases (warning → critical).
+
+**JSON Payload Example:**
+```json
+{
+  "timestamp": "2025-01-17T14:30:00Z",
+  "hostname": "web-server-01",
+  "level": "WARNING",
+  "summary": "3 issues detected",
+  "issues": [
+    {
+      "id": "disk_var_critical",
+      "category": "disk",
+      "severity": "critical",
+      "resource": "/var",
+      "message": "Disk usage at 92%",
+      "details": {
+        "used": "45GB",
+        "total": "49GB",
+        "percent": 92
+      },
+      "action": "Clean up old files or expand storage"
+    }
+  ]
+}
+```
+
+### Testing Health Checks
+
+Run a manual check:
+```bash
+~/apps/health-check.sh
+```
+
+Run in quiet mode (only show issues):
+```bash
+~/apps/health-check.sh --quiet
+```
+
+Force webhook notification (even if all OK):
+```bash
+~/apps/health-check.sh --force
+```
+
+Check the log:
+```bash
+tail -f ~/logs/health-check.log
+```
+
+## Automate Health Monitoring
+
+Create a crontab entry:
+```
+sudo crontab -e
+```
+
+Add this line:
+```
+# WordPress Health Monitoring (runs hourly)
+0 * * * * /home/_user_/apps/health-check.sh >> /home/_user_/logs/health-check.log 2>&1
+```
+
+This will run health checks every hour and log all output to `/home/_user_/logs/health-check.log`.

@@ -49,6 +49,12 @@ For faster setup with validation and error handling:
   - Reads credentials from wp-config.php on-the-fly
   - Automatic cleanup of old backups
 
+- **`apps/health-check.sh`** - Monitor server and site health
+  - Checks disk space, SSL expiration, service status, and backup freshness
+  - Tests site availability and database connectivity
+  - Webhook notifications for critical issues (Make.com, Zapier, etc.)
+  - Alert throttling to prevent notification spam
+
 - **`apps/setup-staging-nginx.sh`** - Configure nginx/SSL for staging sites
   - Auto-discovers staging WordPress installations
   - Creates nginx configuration without caching
