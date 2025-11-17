@@ -101,20 +101,20 @@ get_ssl_days() {
 
 get_backup_frequency() {
     local domain=$1
-    local daily_script="/home/${USER}/apps/backup/backup-daily.sh"
-    local weekly_script="/home/${USER}/apps/backup/backup-weekly.sh"
-    local monthly_script="/home/${USER}/apps/backup/backup-monthly.sh"
+    local backup_script="/home/${USER}/apps/backup.sh"
 
-    local in_daily=$(grep -q "site-${domain}.sh" "$daily_script" 2>/dev/null && echo "1" || echo "0")
-    local in_weekly=$(grep -q "site-${domain}.sh" "$weekly_script" 2>/dev/null && echo "1" || echo "0")
-    local in_monthly=$(grep -q "site-${domain}.sh" "$monthly_script" 2>/dev/null && echo "1" || echo "0")
+    # Check if backup.sh exists
+    if [ ! -f "$backup_script" ]; then
+        echo "None"
+        return
+    fi
 
-    if [ "$in_daily" = "1" ]; then
-        echo "Daily"
-    elif [ "$in_weekly" = "1" ]; then
-        echo "Weekly"
-    elif [ "$in_monthly" = "1" ]; then
-        echo "Monthly"
+    # Search for domain in SITES array and extract frequency
+    local frequency=$(grep "\"${domain}:" "$backup_script" 2>/dev/null | sed 's/.*"\(.*\):\(.*\)".*/\2/' | tr -d '[:space:]')
+
+    if [ -n "$frequency" ]; then
+        # Capitalize first letter for display
+        echo "${frequency^}"
     else
         echo "None"
     fi

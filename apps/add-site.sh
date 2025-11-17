@@ -157,12 +157,9 @@ rollback_all() {
 
     # Remove backup configuration
     if [[ "${STATE_BACKUP_CREATED:-false}" == "true" ]]; then
-        rm -f "/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh"
         rm -rf "/home/${USER}/backups/${STATE_DOMAIN}"
-        # Remove from backup schedule files
-        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-daily.sh" 2>/dev/null || true
-        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-weekly.sh" 2>/dev/null || true
-        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-monthly.sh" 2>/dev/null || true
+        # Remove from SITES array in backup.sh
+        sed -i "\|\"${STATE_DOMAIN}:|d" "/home/${USER}/apps/backup.sh" 2>/dev/null || true
     fi
 
     # Remove nginx config
@@ -580,32 +577,6 @@ step_setup_backup() {
     local backup_dir="/home/${USER}/backups/${domain}"
     mkdir -p "$backup_dir"
 
-    # Create site-specific backup script
-    local backup_script="/home/${USER}/apps/backup/site-${domain}.sh"
-    cat > "$backup_script" << 'BACKUP_EOF'
-# Define variables for the site
-THESITE="DOMAIN_PLACEHOLDER"
-THEDB="DBNAME_PLACEHOLDER"
-THEDBUSER="DBUSER_PLACEHOLDER"
-THEDBPW="DBPASS_PLACEHOLDER"
-
-# Take backup of the database
-mysqldump -u $THEDBUSER -p${THEDBPW} $THEDB | gzip > /home/USER_PLACEHOLDER/www/$THESITE/${THESITE}_${THEDATE}.sql.gz
-# Archive the folder containing sql backup without cache and put it under /home/USER_PLACEHOLDER/backups/website_folder_name/
-sudo tar -czf /home/USER_PLACEHOLDER/backups/${THESITE}/${THESITE}_${THEFREQ}_${THEDATE}.tar.gz --exclude='wp-content/cache' $THESITE
-# Remove the sql backup from the website folder
-sudo rm /home/USER_PLACEHOLDER/www/$THESITE/*.sql.gz
-BACKUP_EOF
-
-    # Replace placeholders with actual values
-    sed -i "s/DOMAIN_PLACEHOLDER/${domain}/g" "$backup_script"
-    sed -i "s/DBNAME_PLACEHOLDER/${dbname}/g" "$backup_script"
-    sed -i "s/DBUSER_PLACEHOLDER/${dbuser}/g" "$backup_script"
-    sed -i "s/DBPASS_PLACEHOLDER/${dbpass}/g" "$backup_script"
-    sed -i "s/USER_PLACEHOLDER/${USER}/g" "$backup_script"
-
-    chmod +x "$backup_script"
-
     echo ""
     echo "Select backup frequency:"
     echo "  1) Daily   (creates daily + weekly + monthly backups)"
@@ -614,40 +585,45 @@ BACKUP_EOF
     read -p "Choose (1/2/3) [1]: " freq_choice
     freq_choice=${freq_choice:-1}
 
-    local daily_script="/home/${USER}/apps/backup/backup-daily.sh"
-    local weekly_script="/home/${USER}/apps/backup/backup-weekly.sh"
-    local monthly_script="/home/${USER}/apps/backup/backup-monthly.sh"
-
+    # Determine frequency based on choice
+    local frequency=""
     case $freq_choice in
         1)
-            # Daily: Add to all three schedules (cascading)
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$daily_script"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            frequency="daily"
             echo "Configured for: Daily + Weekly + Monthly backups"
             ;;
         2)
-            # Weekly: Add to weekly and monthly schedules (cascading)
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            frequency="weekly"
             echo "Configured for: Weekly + Monthly backups"
             ;;
         3)
-            # Monthly: Add to monthly schedule only
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            frequency="monthly"
             echo "Configured for: Monthly backups only"
             ;;
         *)
             echo -e "${YELLOW}Invalid choice, defaulting to Daily${NC}"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$daily_script"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
-            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            frequency="daily"
             echo "Configured for: Daily + Weekly + Monthly backups"
             ;;
     esac
 
+    # Add site to SITES array in backup.sh
+    local backup_script="/home/${USER}/apps/backup.sh"
+
+    # Check if site already exists in array
+    if grep -q "\"${domain}:" "$backup_script" 2>/dev/null; then
+        echo -e "${YELLOW}⚠ Site already exists in backup configuration${NC}"
+    else
+        # Add entry to SITES array (before the closing parenthesis)
+        # Find the line with SITES=( and add entry before the closing )
+        sed -i "/^SITES=(/,/)/ {
+            /^)/ i\\    \"${domain}:${frequency}\"
+        }" "$backup_script"
+    fi
+
     echo -e "${GREEN}✓ Backup configured${NC}"
-    echo "  Script: ${backup_script}"
+    echo "  Configuration: ${backup_script}"
+    echo "  Frequency: ${frequency}"
     echo "  Backups stored in: ${backup_dir}"
     update_state "STATE_BACKUP_CREATED" "true"
 }
