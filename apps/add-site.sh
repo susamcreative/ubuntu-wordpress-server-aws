@@ -18,6 +18,7 @@
 #   6. Sets proper permissions
 #   7. Creates nginx configuration from template
 #   8. Obtains SSL certificate (optional, doesn't fail if DNS not ready)
+#   9. Sets up automated backups (daily/weekly/monthly)
 #
 # FILES CREATED:
 #   ~/.add-site-credentials.txt  - Site credentials (MUST DELETE after copying)
@@ -153,6 +154,16 @@ rollback_all() {
     echo "Rolling back ${STATE_DOMAIN}..."
 
     source "$STATE_FILE"
+
+    # Remove backup configuration
+    if [[ "${STATE_BACKUP_CREATED:-false}" == "true" ]]; then
+        rm -f "/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh"
+        rm -rf "/home/${USER}/backups/${STATE_DOMAIN}"
+        # Remove from backup schedule files
+        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-daily.sh" 2>/dev/null || true
+        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-weekly.sh" 2>/dev/null || true
+        sed -i "\|/home/${USER}/apps/backup/site-${STATE_DOMAIN}.sh|d" "/home/${USER}/apps/backup/backup-monthly.sh" 2>/dev/null || true
+    fi
 
     # Remove nginx config
     if [[ "${STATE_NGINX_CREATED:-false}" == "true" ]]; then
@@ -333,11 +344,11 @@ select_nginx_template() {
 
 step_create_dirs() {
     if state_is_complete "STATE_DIRS_CREATED"; then
-        echo "[1/8] Directories already created, skipping..."
+        echo "[1/9] Directories already created, skipping..."
         return 0
     fi
 
-    echo "[1/8] Creating directories..."
+    echo "[1/9] Creating directories..."
 
     mkdir -p "${WEB_ROOT}/${domain}"
     mkdir -p "${CACHE_ROOT}/${domain}"
@@ -348,12 +359,12 @@ step_create_dirs() {
 
 step_create_database() {
     if state_is_complete "STATE_DB_CREATED"; then
-        echo "[2/8] Database already created, skipping..."
+        echo "[2/9] Database already created, skipping..."
         source "$STATE_FILE"  # Load existing credentials
         return 0
     fi
 
-    echo "[2/8] Creating database..."
+    echo "[2/9] Creating database..."
 
     if mysql -p"${MYSQL_PASS}" -e "
 CREATE DATABASE ${dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
@@ -374,11 +385,11 @@ FLUSH PRIVILEGES;
 
 step_download_wordpress() {
     if state_is_complete "STATE_FILES_CREATED"; then
-        echo "[3/8] WordPress files already exist, skipping..."
+        echo "[3/9] WordPress files already exist, skipping..."
         return 0
     fi
 
-    echo "[3/8] Downloading WordPress..."
+    echo "[3/9] Downloading WordPress..."
 
     cd "${WEB_ROOT}/${domain}"
 
@@ -413,11 +424,11 @@ step_download_wordpress() {
 
 step_configure_wpconfig() {
     if state_is_complete "STATE_WPCONFIG_CREATED"; then
-        echo "[4/8] wp-config already configured, skipping..."
+        echo "[4/9] wp-config already configured, skipping..."
         return 0
     fi
 
-    echo "[4/8] Configuring wp-config.php..."
+    echo "[4/9] Configuring wp-config.php..."
 
     cd "${WEB_ROOT}/${domain}"
 
@@ -463,11 +474,11 @@ define( 'WP_CACHE_KEY_SALT', '${CACHE_SALT}' );" wp-config.php
 
 step_set_permissions() {
     if state_is_complete "STATE_PERMISSIONS_SET"; then
-        echo "[5/8] Permissions already set, skipping..."
+        echo "[5/9] Permissions already set, skipping..."
         return 0
     fi
 
-    echo "[5/8] Setting permissions..."
+    echo "[5/9] Setting permissions..."
 
     local site_path="${WEB_ROOT}/${domain}"
 
@@ -489,11 +500,11 @@ step_set_permissions() {
 
 step_create_nginx_config() {
     if state_is_complete "STATE_NGINX_CREATED"; then
-        echo "[6/8] Nginx config already exists, skipping..."
+        echo "[6/9] Nginx config already exists, skipping..."
         return 0
     fi
 
-    echo "[6/8] Creating nginx configuration..."
+    echo "[6/9] Creating nginx configuration..."
 
     NGINX_CONF="/etc/nginx/sites-available/${domain}.conf"
 
@@ -518,16 +529,16 @@ step_create_nginx_config() {
 
 step_get_ssl() {
     if [[ "$USE_SSL" == "false" ]]; then
-        echo "[7/8] Skipping SSL (HTTP-only site)"
+        echo "[7/9] Skipping SSL (HTTP-only site)"
         return 0
     fi
 
     if state_is_complete "STATE_SSL_CREATED"; then
-        echo "[7/8] SSL certificate already exists, skipping..."
+        echo "[7/9] SSL certificate already exists, skipping..."
         return 0
     fi
 
-    echo "[7/8] Obtaining SSL certificate..."
+    echo "[7/9] Obtaining SSL certificate..."
 
     if sudo certbot --nginx certonly \
         -d "${domain}" -d "www.${domain}" \
@@ -557,8 +568,92 @@ step_get_ssl() {
     fi
 }
 
+step_setup_backup() {
+    if state_is_complete "STATE_BACKUP_CREATED"; then
+        echo "[8/9] Backup already configured, skipping..."
+        return 0
+    fi
+
+    echo "[8/9] Setting up automated backups..."
+
+    # Create backup directory for this site
+    local backup_dir="/home/${USER}/backups/${domain}"
+    mkdir -p "$backup_dir"
+
+    # Create site-specific backup script
+    local backup_script="/home/${USER}/apps/backup/site-${domain}.sh"
+    cat > "$backup_script" << 'BACKUP_EOF'
+# Define variables for the site
+THESITE="DOMAIN_PLACEHOLDER"
+THEDB="DBNAME_PLACEHOLDER"
+THEDBUSER="DBUSER_PLACEHOLDER"
+THEDBPW="DBPASS_PLACEHOLDER"
+
+# Take backup of the database
+mysqldump -u $THEDBUSER -p${THEDBPW} $THEDB | gzip > /home/USER_PLACEHOLDER/www/$THESITE/${THESITE}_${THEDATE}.sql.gz
+# Archive the folder containing sql backup without cache and put it under /home/USER_PLACEHOLDER/backups/website_folder_name/
+sudo tar -czf /home/USER_PLACEHOLDER/backups/${THESITE}/${THESITE}_${THEFREQ}_${THEDATE}.tar.gz --exclude='wp-content/cache' $THESITE
+# Remove the sql backup from the website folder
+sudo rm /home/USER_PLACEHOLDER/www/$THESITE/*.sql.gz
+BACKUP_EOF
+
+    # Replace placeholders with actual values
+    sed -i "s/DOMAIN_PLACEHOLDER/${domain}/g" "$backup_script"
+    sed -i "s/DBNAME_PLACEHOLDER/${dbname}/g" "$backup_script"
+    sed -i "s/DBUSER_PLACEHOLDER/${dbuser}/g" "$backup_script"
+    sed -i "s/DBPASS_PLACEHOLDER/${dbpass}/g" "$backup_script"
+    sed -i "s/USER_PLACEHOLDER/${USER}/g" "$backup_script"
+
+    chmod +x "$backup_script"
+
+    echo ""
+    echo "Select backup frequency:"
+    echo "  1) Daily   (creates daily + weekly + monthly backups)"
+    echo "  2) Weekly  (creates weekly + monthly backups)"
+    echo "  3) Monthly (creates monthly backups only)"
+    read -p "Choose (1/2/3) [1]: " freq_choice
+    freq_choice=${freq_choice:-1}
+
+    local daily_script="/home/${USER}/apps/backup/backup-daily.sh"
+    local weekly_script="/home/${USER}/apps/backup/backup-weekly.sh"
+    local monthly_script="/home/${USER}/apps/backup/backup-monthly.sh"
+
+    case $freq_choice in
+        1)
+            # Daily: Add to all three schedules (cascading)
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$daily_script"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            echo "Configured for: Daily + Weekly + Monthly backups"
+            ;;
+        2)
+            # Weekly: Add to weekly and monthly schedules (cascading)
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            echo "Configured for: Weekly + Monthly backups"
+            ;;
+        3)
+            # Monthly: Add to monthly schedule only
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            echo "Configured for: Monthly backups only"
+            ;;
+        *)
+            echo -e "${YELLOW}Invalid choice, defaulting to Daily${NC}"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$daily_script"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$weekly_script"
+            echo "sh /home/${USER}/apps/backup/site-${domain}.sh" >> "$monthly_script"
+            echo "Configured for: Daily + Weekly + Monthly backups"
+            ;;
+    esac
+
+    echo -e "${GREEN}✓ Backup configured${NC}"
+    echo "  Script: ${backup_script}"
+    echo "  Backups stored in: ${backup_dir}"
+    update_state "STATE_BACKUP_CREATED" "true"
+}
+
 step_finalize() {
-    echo "[8/8] Finalizing..."
+    echo "[9/9] Finalizing..."
 
     # Flush Redis if available
     if command -v redis-cli &>/dev/null; then
@@ -696,6 +791,7 @@ STATE_WPCONFIG_CREATED=false
 STATE_PERMISSIONS_SET=false
 STATE_NGINX_CREATED=false
 STATE_SSL_CREATED=false
+STATE_BACKUP_CREATED=false
 EOF
         echo ""
     fi
@@ -708,6 +804,7 @@ EOF
     step_set_permissions
     step_create_nginx_config
     step_get_ssl
+    step_setup_backup
     step_finalize
 
     # Write credentials
