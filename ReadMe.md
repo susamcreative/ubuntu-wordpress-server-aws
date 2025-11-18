@@ -43,6 +43,13 @@ For faster setup with validation and error handling:
   - Restores database and/or files
   - Creates safety backups before restoration
 
+- **`apps/remove-site.sh`** - Remove WordPress production site completely
+  - Safely removes nginx config, database, files, and SSL certificates
+  - Blocks removal if staging sites exist (must remove staging first)
+  - Multiple confirmation prompts for safety
+  - Preserves wildcard certificates
+  - Optional backup archive handling (delete/archive/keep)
+
 - **`apps/backup.sh`** - Consolidated backup system
   - Single script for all site backups
   - Cascading frequency logic (daily/weekly/monthly)
