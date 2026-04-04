@@ -16,33 +16,33 @@ sudo add-apt-repository ppa:ondrej/php -y
 sudo apt update
 ```
 
-Install PHP 8.4
+Install PHP 8.5
 ```
-sudo apt install php8.4-fpm php8.4-common php8.4-mysql \
-php8.4-xml php8.4-xmlrpc php8.4-curl php8.4-gd \
-php8.4-imagick php8.4-cli php8.4-dev php8.4-imap \
-php8.4-mbstring php8.4-opcache php8.4-redis \
-php8.4-soap php8.4-zip -y
+sudo apt install php8.5-fpm php8.5-common php8.5-mysql \
+php8.5-xml php8.5-xmlrpc php8.5-curl php8.5-gd \
+php8.5-imagick php8.5-cli php8.5-dev php8.5-imap \
+php8.5-mbstring php8.5-opcache php8.5-redis \
+php8.5-soap php8.5-zip -y
 ```
 
 Configure php-fpm
 
 ```
-sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.4/fpm/pool.d/www.conf
-sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.4/fpm/php.ini
-sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" /etc/php/8.4/fpm/php.ini
-sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" /etc/php/8.4/fpm/php.ini
-sudo sed -i "s/max_execution_time = .*/max_execution_time = 180/" /etc/php/8.4/fpm/php.ini
+sudo sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /etc/php/8.5/fpm/pool.d/www.conf
+sudo sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/8.5/fpm/php.ini
+sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" /etc/php/8.5/fpm/php.ini
+sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" /etc/php/8.5/fpm/php.ini
+sudo sed -i "s/max_execution_time = .*/max_execution_time = 180/" /etc/php/8.5/fpm/php.ini
 ```
 
 Check that the configuration file syntax is correct
 ```
-sudo php-fpm8.4 -t
+sudo php-fpm8.5 -t
 ```
 
 Restart php-fpm
 ```
-sudo service php8.4-fpm restart
+sudo service php8.5-fpm restart
 ```
 
 ## Install MariaDB
@@ -183,7 +183,7 @@ sudo service nginx restart
 
 ```
 sudo apt install redis-server
-sudo service php8.4-fpm restart
+sudo service php8.5-fpm restart
 ```
 
 **NEXT STEP** -> [Wordpress](Wordpress.md)

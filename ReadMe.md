@@ -1,6 +1,6 @@
 # Ubuntu WordPress Server
 
-Production-ready WordPress hosting on Ubuntu 24.04 LTS with Nginx, PHP 8.4, MariaDB 11.8, and Redis.
+Production-ready WordPress hosting on Ubuntu 24.04 LTS with Nginx, PHP 8.5, MariaDB 11.8, and Redis.
 
 This repository provides optimized configurations for nginx (with SSL/TLS), oh-my-zsh terminal customization, and automated backup scripts for WordPress.
 
@@ -80,7 +80,7 @@ The scripts are optional - all manual steps are documented for learning and cust
 ## Stack Versions
 
 - Ubuntu 24.04 LTS
-- PHP 8.4
+- PHP 8.5
 - MariaDB 11.8 LTS
 - Nginx Mainline (1.29+)
 - Redis 7.0+
