@@ -539,7 +539,18 @@ get_http_status() {
 
 get_ssl_days() {
     local domain=$1
-    local cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
+    local cert_file=""
+
+    # Try to find cert path from nginx config
+    local nginx_conf="/etc/nginx/sites-available/${domain}.conf"
+    if [ -f "$nginx_conf" ]; then
+        cert_file=$(grep "ssl_certificate " "$nginx_conf" | grep -v "#" | head -1 | awk '{print $2}' | tr -d ';' | sed 's/fullchain\.pem/cert.pem/')
+    fi
+
+    # Fallback to standard path
+    if [ -z "$cert_file" ] || [ ! -f "$cert_file" ]; then
+        cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
+    fi
 
     if [ -f "$cert_file" ]; then
         local expiry_date=$(openssl x509 -enddate -noout -in "$cert_file" 2>/dev/null | cut -d= -f2)
@@ -554,7 +565,18 @@ get_ssl_days() {
 
 get_ssl_expiry_date() {
     local domain=$1
-    local cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
+    local cert_file=""
+
+    # Try to find cert path from nginx config
+    local nginx_conf="/etc/nginx/sites-available/${domain}.conf"
+    if [ -f "$nginx_conf" ]; then
+        cert_file=$(grep "ssl_certificate " "$nginx_conf" | grep -v "#" | head -1 | awk '{print $2}' | tr -d ';' | sed 's/fullchain\.pem/cert.pem/')
+    fi
+
+    # Fallback to standard path
+    if [ -z "$cert_file" ] || [ ! -f "$cert_file" ]; then
+        cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
+    fi
 
     if [ -f "$cert_file" ]; then
         openssl x509 -enddate -noout -in "$cert_file" 2>/dev/null | cut -d= -f2 | xargs -I{} date -d "{}" '+%Y-%m-%d' 2>/dev/null || echo "N/A"
