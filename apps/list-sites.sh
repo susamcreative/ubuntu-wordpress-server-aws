@@ -95,12 +95,12 @@ get_ssl_days() {
     fi
 
     # Fallback to standard path
-    if [ -z "$cert_file" ] || [ ! -f "$cert_file" ]; then
+    if [ -z "$cert_file" ] || ! sudo test -f "$cert_file" 2>/dev/null; then
         cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
     fi
 
-    if [ -f "$cert_file" ]; then
-        local expiry_date=$(openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2)
+    if sudo test -f "$cert_file" 2>/dev/null; then
+        local expiry_date=$(sudo openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2)
         local expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null || echo "0")
         local now_epoch=$(date +%s)
         local days_left=$(( ($expiry_epoch - $now_epoch) / 86400 ))
@@ -289,12 +289,12 @@ get_ssl_expiry_date() {
     fi
 
     # Fallback to standard path
-    if [ -z "$cert_file" ] || [ ! -f "$cert_file" ]; then
+    if [ -z "$cert_file" ] || ! sudo test -f "$cert_file" 2>/dev/null; then
         cert_file="/etc/letsencrypt/live/${domain}/cert.pem"
     fi
 
-    if [ -f "$cert_file" ]; then
-        openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2 | xargs -I{} date -d "{}" '+%Y-%m-%d' 2>/dev/null || echo "N/A"
+    if sudo test -f "$cert_file" 2>/dev/null; then
+        sudo openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2 | xargs -I{} date -d "{}" '+%Y-%m-%d' 2>/dev/null || echo "N/A"
     else
         echo "N/A"
     fi
