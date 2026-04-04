@@ -670,7 +670,7 @@ This prevents orphaned staging configurations."
                 echo ""
 
                 # Test MySQL connection
-                if ! mysql -p"${mysql_root_pass}" -e "SELECT 1" &>/dev/null; then
+                if ! mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$mysql_root_pass") -e "SELECT 1" &>/dev/null; then
                     error_exit "MySQL authentication failed"
                 fi
 
@@ -805,7 +805,7 @@ This prevents orphaned staging configurations."
             fi
         fi
 
-        if mysql -p"${mysql_root_pass}" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null; then
+        if mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$mysql_root_pass") -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null; then
             success "Database '${DB_NAME}' dropped"
             log_operation "Dropped database ${DB_NAME}"
         else
@@ -813,7 +813,7 @@ This prevents orphaned staging configurations."
             log_operation "Failed to drop database ${DB_NAME}"
         fi
 
-        if mysql -p"${mysql_root_pass}" -e "DROP USER IF EXISTS '${DB_USER}'@'${DB_HOST}';" 2>/dev/null; then
+        if mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$mysql_root_pass") -e "DROP USER IF EXISTS '${DB_USER}'@'${DB_HOST}';" 2>/dev/null; then
             success "Database user '${DB_USER}' removed"
             log_operation "Dropped user ${DB_USER}"
         else
@@ -821,7 +821,7 @@ This prevents orphaned staging configurations."
             log_operation "Failed to drop user ${DB_USER}"
         fi
 
-        mysql -p"${mysql_root_pass}" -e "FLUSH PRIVILEGES;" 2>/dev/null || true
+        mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$mysql_root_pass") -e "FLUSH PRIVILEGES;" 2>/dev/null || true
     else
         info "Database preserved (not confirmed for deletion)"
     fi
