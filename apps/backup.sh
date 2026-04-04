@@ -191,9 +191,9 @@ for entry in "${SITES[@]}"; do
 
     if [ "$should_backup" = true ]; then
         if backup_site "$domain"; then
-            ((BACKUP_COUNT++))
+            BACKUP_COUNT=$((BACKUP_COUNT + 1))
         else
-            ((SKIPPED_COUNT++))
+            SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
         fi
     fi
 done
