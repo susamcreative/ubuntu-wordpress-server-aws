@@ -203,7 +203,7 @@ get_requests_today() {
 
 get_redis_status() {
     if command -v redis-cli &>/dev/null; then
-        if redis-cli ping &>/dev/null | grep -q "PONG"; then
+        if redis-cli ping 2>/dev/null | grep -q "PONG"; then
             echo "Connected"
         else
             echo "Not responding"

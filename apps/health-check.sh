@@ -337,7 +337,7 @@ EOF
         fi
     else
         # Test database connectivity
-        if ! mysql -e "SELECT 1" &>/dev/null; then
+        if ! sudo mysql -e "SELECT 1" &>/dev/null; then
             local alert_id=$(generate_alert_id "service" "mysql_connectivity")
 
             if should_send_alert "$alert_id" "critical"; then
@@ -400,7 +400,7 @@ EOF
         fi
     else
         # Test nginx config
-        if ! nginx -t &>/dev/null; then
+        if ! sudo nginx -t &>/dev/null; then
             local alert_id=$(generate_alert_id "service" "nginx_config")
 
             if should_send_alert "$alert_id" "critical"; then
@@ -482,7 +482,7 @@ check_redis_service() {
     fi
 
     # Check Redis connectivity
-    if ! redis-cli ping &>/dev/null | grep -q "PONG"; then
+    if ! redis-cli ping 2>/dev/null | grep -q "PONG"; then
         local alert_id=$(generate_alert_id "service" "redis")
 
         if should_send_alert "$alert_id" "warning"; then
@@ -1062,7 +1062,7 @@ print_system_health() {
 
         # MySQL
         if systemctl is-active --quiet mysql 2>/dev/null || systemctl is-active --quiet mariadb 2>/dev/null; then
-            if mysql -e "SELECT 1" &>/dev/null; then
+            if sudo mysql -e "SELECT 1" &>/dev/null; then
                 echo -e "  ${GREEN}✓ MySQL Service:         Running${NC}"
             else
                 echo -e "  ${RED}✗ MySQL Service:         Not accepting connections [CRITICAL]${NC}"
@@ -1073,7 +1073,7 @@ print_system_health() {
 
         # Nginx
         if systemctl is-active --quiet nginx 2>/dev/null; then
-            if nginx -t &>/dev/null; then
+            if sudo nginx -t &>/dev/null; then
                 echo -e "  ${GREEN}✓ Nginx Service:         Running${NC}"
             else
                 echo -e "  ${RED}✗ Nginx Service:         Config test failed [CRITICAL]${NC}"
@@ -1092,7 +1092,7 @@ print_system_health() {
 
         # Redis
         if command -v redis-cli &>/dev/null; then
-            if redis-cli ping &>/dev/null | grep -q "PONG"; then
+            if redis-cli ping 2>/dev/null | grep -q "PONG"; then
                 echo -e "  ${GREEN}✓ Redis Service:         Running${NC}"
             else
                 echo -e "  ${YELLOW}⚠ Redis Service:         Not responding [WARNING]${NC}"
