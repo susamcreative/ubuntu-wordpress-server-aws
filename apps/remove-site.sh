@@ -743,7 +743,7 @@ This prevents orphaned staging configurations."
         info "Not in backup.sh SITES array"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 2: Remove nginx config
     echo "[${step}/${total_steps}] Removing nginx configuration..."
@@ -763,7 +763,7 @@ This prevents orphaned staging configurations."
         info "Nginx configuration not found"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 3: Remove SSL certificate
     echo "[${step}/${total_steps}] Handling SSL certificate..."
@@ -784,7 +784,7 @@ This prevents orphaned staging configurations."
         info "No SSL certificate to remove"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 4: Drop database
     echo "[${step}/${total_steps}] Handling database..."
@@ -826,7 +826,7 @@ This prevents orphaned staging configurations."
         info "Database preserved (not confirmed for deletion)"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 5: Remove cache directory
     echo "[${step}/${total_steps}] Removing cache directory..."
@@ -838,7 +838,7 @@ This prevents orphaned staging configurations."
         info "No cache directory found"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 6: Remove WordPress files
     echo "[${step}/${total_steps}] Handling WordPress files..."
@@ -853,18 +853,18 @@ This prevents orphaned staging configurations."
         info "WordPress directory not found"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 7: Remove log files
     echo "[${step}/${total_steps}] Removing log files..."
     local removed_logs=0
     if [ -f "$ACCESS_LOG" ]; then
         rm -f "$ACCESS_LOG"
-        ((removed_logs++))
+        removed_logs=$((removed_logs + 1))
     fi
     if [ -f "$ERROR_LOG" ]; then
         rm -f "$ERROR_LOG"
-        ((removed_logs++))
+        removed_logs=$((removed_logs + 1))
     fi
 
     if [ $removed_logs -gt 0 ]; then
@@ -874,7 +874,7 @@ This prevents orphaned staging configurations."
         info "No log files found"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 8: Handle backup archives
     echo "[${step}/${total_steps}] Handling backup archives..."
@@ -901,7 +901,7 @@ This prevents orphaned staging configurations."
         info "No backup archives found"
     fi
     echo ""
-    ((step++))
+    step=$((step + 1))
 
     # Step 9: Final cleanup
     echo "[${step}/${total_steps}] Final cleanup..."

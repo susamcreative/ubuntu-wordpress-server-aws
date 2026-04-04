@@ -382,11 +382,11 @@ main() {
     removed_logs=0
     if [ -f "$ACCESS_LOG" ]; then
         rm -f "$ACCESS_LOG"
-        ((removed_logs++))
+        removed_logs=$((removed_logs + 1))
     fi
     if [ -f "$ERROR_LOG" ]; then
         rm -f "$ERROR_LOG"
-        ((removed_logs++))
+        removed_logs=$((removed_logs + 1))
     fi
 
     if [ $removed_logs -gt 0 ]; then

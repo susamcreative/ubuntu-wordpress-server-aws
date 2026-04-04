@@ -92,7 +92,7 @@ list_sites() {
             if [ -f "$site_dir/wp-config.php" ]; then
                 sites+=("$site")
                 echo "  ${index}) ${site}"
-                ((index++))
+                index=$((index + 1))
             fi
         fi
     done
@@ -145,7 +145,7 @@ list_backups() {
 
                 backups+=("$backup_file")
                 printf "  %2d) %-10s %s (%s)\n" "$index" "[$frequency]" "$datetime" "$filesize"
-                ((index++))
+                index=$((index + 1))
             fi
         fi
     done < <(find "$backup_dir" -name "${site}_*.tar.gz" -type f | sort -r)
