@@ -104,8 +104,8 @@ backup_site() {
 
     echo "Backing up: ${domain}"
 
-    # Create database backup
-    if mysqldump -u "$dbuser" -p"${dbpass}" "$dbname" 2>/dev/null | gzip > "${site_path}/${domain}_${THEDATE}.sql.gz"; then
+    # Create database backup (credentials via process substitution to avoid exposure in ps output)
+    if mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" 2>/dev/null | gzip > "${site_path}/${domain}_${THEDATE}.sql.gz"; then
         echo "  ✓ Database backup created"
     else
         echo "  ✗ Database backup failed"
