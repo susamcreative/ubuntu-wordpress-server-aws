@@ -194,8 +194,8 @@ find_staging_sites_for_domain() {
                     continue
                 fi
 
-                # Check if this is a subdomain of parent domain
-                if [[ "$conf_domain" == *."$parent_domain" ]] && [[ "$conf_domain" != "$parent_domain" ]]; then
+                # Check if this is an explicitly named staging subdomain of the parent domain
+                if [[ "$conf_domain" == *."$parent_domain" ]] && [[ "$conf_domain" != "$parent_domain" ]] && is_staging_site "$conf_domain"; then
                     staging_sites+=("$conf_domain")
                 fi
             fi
@@ -208,8 +208,9 @@ find_staging_sites_for_domain() {
 is_staging_site() {
     local domain=$1
 
-    # A staging site is typically a subdomain (has at least 3 parts: staging.example.com)
-    if [[ "$domain" == *.*.* ]]; then
+    # Only treat explicit staging-style names as staging. Ordinary subdomains
+    # such as app.example.com or client.dev.example.com are regular sites.
+    if [[ "$domain" == staging.* ]] || [[ "$domain" == *.staging.* ]] || [[ "$domain" == staging-*.* ]] || [[ "$domain" == *-staging.* ]]; then
         return 0
     fi
 
@@ -380,7 +381,7 @@ main() {
     log_operation "Attempting to remove domain: $domain"
 
     echo ""
-    echo "Domain to remove: ${BOLD}${domain}${NC}"
+    echo -e "Domain to remove: ${BOLD}${domain}${NC}"
     echo ""
 
     #=========================================================================
@@ -392,10 +393,10 @@ main() {
 
     # Check if site is actually a staging site
     if is_staging_site "$domain"; then
-        warning "This appears to be a staging site (subdomain)"
+        warning "This appears to be a staging site"
         echo ""
         echo "For staging sites, it's recommended to use:"
-        echo "  ${CYAN}./remove-staging.sh ${domain}${NC}"
+        echo -e "  ${CYAN}./remove-staging.sh ${domain}${NC}"
         echo ""
 
         if [ "$FORCE_MODE" != true ]; then
@@ -516,7 +517,7 @@ This prevents orphaned staging configurations."
     #=========================================================================
 
     echo "========================================="
-    echo "SITE REMOVAL PLAN for: ${BOLD}${domain}${NC}"
+    echo -e "SITE REMOVAL PLAN for: ${BOLD}${domain}${NC}"
     echo "========================================="
     echo ""
 
@@ -543,7 +544,7 @@ This prevents orphaned staging configurations."
         echo -e "${YELLOW}[SSL CERTIFICATE]${NC}"
         if [ "$IS_WILDCARD" = true ]; then
             echo "  ✓ ${SSL_CERT_PATH}"
-            echo "    ${CYAN}└─ Type: Wildcard (will be PRESERVED)${NC}"
+            echo -e "    ${CYAN}└─ Type: Wildcard (will be PRESERVED)${NC}"
         else
             echo "  ✓ ${SSL_CERT_PATH}"
             echo "    └─ Type: Specific (will be removed)"
@@ -930,7 +931,7 @@ This prevents orphaned staging configurations."
     echo -e "${GREEN}${BOLD}✓ Site Removal Complete!${NC}"
     echo "========================================="
     echo ""
-    echo "Removed: ${BOLD}${domain}${NC}"
+    echo -e "Removed: ${BOLD}${domain}${NC}"
     echo ""
     echo "The following have been removed:"
     echo "  ✓ Nginx configuration"

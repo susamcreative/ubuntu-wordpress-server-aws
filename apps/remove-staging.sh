@@ -119,6 +119,16 @@ is_wildcard_cert() {
     return 1
 }
 
+is_staging_domain() {
+    local domain=$1
+
+    if [[ "$domain" == staging.* ]] || [[ "$domain" == *.staging.* ]] || [[ "$domain" == staging-*.* ]] || [[ "$domain" == *-staging.* ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
 find_staging_sites() {
     local sites=()
 
@@ -132,8 +142,8 @@ find_staging_sites() {
                 continue
             fi
 
-            # Check if this looks like a staging domain (has subdomain)
-            if [[ "$domain" == *.*.* ]]; then
+            # Only list explicitly named staging domains.
+            if is_staging_domain "$domain"; then
                 sites+=("$domain")
             fi
         fi
@@ -191,6 +201,10 @@ main() {
 
     if [ -z "$staging_domain" ]; then
         error_exit "No staging domain specified"
+    fi
+
+    if ! is_staging_domain "$staging_domain"; then
+        error_exit "Refusing to remove non-staging domain with remove-staging.sh: ${staging_domain}. Use remove-site.sh for dev or production sites."
     fi
 
     echo ""
