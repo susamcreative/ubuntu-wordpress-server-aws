@@ -182,8 +182,10 @@ is_wildcard_cert() {
 find_staging_sites_for_domain() {
     local parent_domain=$1
     local staging_sites=()
+    local parent_label="${parent_domain%%.*}"
+    local parent_base="${parent_domain#*.}"
 
-    # Look for nginx configs that are subdomains of parent domain
+    # Look for nginx configs that are explicit staging sites for this domain.
     if [ -d "/etc/nginx/sites-available" ]; then
         for conf in /etc/nginx/sites-available/*.conf; do
             if [ -f "$conf" ]; then
@@ -194,8 +196,9 @@ find_staging_sites_for_domain() {
                     continue
                 fi
 
-                # Check if this is an explicitly named staging subdomain of the parent domain
-                if [[ "$conf_domain" == *."$parent_domain" ]] && [[ "$conf_domain" != "$parent_domain" ]] && is_staging_site "$conf_domain"; then
+                if [[ "$conf_domain" == "staging.${parent_domain}" ]] || [[ "$conf_domain" == "staging-${parent_domain}" ]]; then
+                    staging_sites+=("$conf_domain")
+                elif [ "$parent_base" != "$parent_domain" ] && [[ "$conf_domain" == "${parent_label}-staging.${parent_base}" ]]; then
                     staging_sites+=("$conf_domain")
                 fi
             fi
