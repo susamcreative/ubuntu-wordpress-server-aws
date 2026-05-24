@@ -118,6 +118,7 @@ backup_site() {
     # Create archive
     if sudo tar -czf "${BACKUP_ROOT}/${domain}/${domain}_${THEFREQ}_${THEDATE}.tar.gz" \
         --exclude='wp-content/cache' \
+        --exclude="${domain}/wp-content/litespeed" \
         -C "$WEB_ROOT" \
         "$domain" 2>/dev/null; then
         echo "  ✓ Archive created"
