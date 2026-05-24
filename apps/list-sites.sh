@@ -32,9 +32,22 @@ WEB_ROOT="/home/${USER}/www"
 BACKUP_ROOT="/home/${USER}/backups"
 LOGS_ROOT="/home/${USER}/logs"
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo "ERROR: Run this script as the app user, not root. It uses sudo internally where needed." >&2
+    exit 1
+fi
+
 #=============================================================================
 # DATA COLLECTION FUNCTIONS
 #=============================================================================
+
+mysql_with_credentials() {
+    local dbuser=$1
+    local dbpass=$2
+    shift 2
+
+    mysql --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$@"
+}
 
 get_http_status() {
     local domain=$1
@@ -66,7 +79,7 @@ get_db_size() {
     local dbuser=$2
     local dbpass=$3
 
-    mysql -u"$dbuser" -p"$dbpass" -sN -e "
+    mysql_with_credentials "$dbuser" "$dbpass" -sN -e "
         SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 0)
         FROM information_schema.TABLES
         WHERE table_schema = '$dbname';
@@ -233,7 +246,7 @@ get_db_table_count() {
     local dbuser=$2
     local dbpass=$3
 
-    mysql -u"$dbuser" -p"$dbpass" -sN -e "
+    mysql_with_credentials "$dbuser" "$dbpass" -sN -e "
         SELECT COUNT(*)
         FROM information_schema.TABLES
         WHERE table_schema = '$dbname';
@@ -316,7 +329,7 @@ check_admin_user() {
     local dbpass=$3
     local table_prefix=$(get_table_prefix "$site_path")
 
-    local count=$(mysql -u"$dbuser" -p"$dbpass" -sN -e "
+    local count=$(mysql_with_credentials "$dbuser" "$dbpass" -sN -e "
         SELECT COUNT(*)
         FROM ${dbname}.${table_prefix}users
         WHERE user_login = 'admin';

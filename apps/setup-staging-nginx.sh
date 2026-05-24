@@ -55,6 +55,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${RED}ERROR: Run this script as the app user, not root. It uses sudo internally where needed.${NC}" >&2
+    exit 1
+fi
+
 #=============================================================================
 # HELPER FUNCTIONS
 #=============================================================================

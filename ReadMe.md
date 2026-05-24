@@ -77,6 +77,8 @@ For faster setup with validation and error handling:
 
 The scripts are optional - all manual steps are documented for learning and customization.
 
+Run interactive scripts as the app user, not with `sudo`; they call `sudo` internally where needed. Root crontab is appropriate for unattended automation such as backups and quiet health checks.
+
 ## Stack Versions
 
 - Ubuntu 24.04 LTS

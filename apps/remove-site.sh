@@ -93,6 +93,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${RED}ERROR: Run this script as the app user, not root. It uses sudo internally where needed.${NC}" >&2
+    exit 1
+fi
+
 # Flags
 DRY_RUN=false
 FORCE_MODE=false

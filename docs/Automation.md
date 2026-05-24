@@ -99,6 +99,8 @@ All output is logged to `/home/_user_/logs/backup.log`. Backup command errors ar
 
 The cron entries can live in root's crontab for unattended permission safety. The backup script resolves `/home/_user_` from its own location, so it does not depend on `whoami`.
 
+Run interactive scripts such as `add-site.sh`, `remove-site.sh`, `restore-backup.sh`, `setup-staging-nginx.sh`, `list-sites.sh`, and `update.sh` as the app user, not with `sudo`. They call `sudo` internally for the operations that need it.
+
 ### Monitoring Backups
 
 Check backup status for all sites:
@@ -140,7 +142,7 @@ The health check script (`health-check.sh`) monitors server and site health, SSL
 
 **System Health:**
 - Disk space (/, /var, /tmp) - Warns at 80%, critical at 90%
-- MySQL service status and database connectivity
+- MySQL service status
 - Nginx service status and configuration validity
 - PHP-FPM service status (auto-detects version)
 - Redis service status and connectivity
@@ -230,7 +232,7 @@ sudo crontab -e
 Add this line:
 ```
 # WordPress Health Monitoring (runs hourly)
-0 * * * * cd /home/_user_/apps && /bin/bash ./health-check.sh >> /home/_user_/logs/health-check.log 2>&1
+0 * * * * cd /home/_user_/apps && /bin/bash ./health-check.sh --quiet >> /home/_user_/logs/health-check.log 2>&1
 ```
 
 This will run health checks every hour and log all output to `/home/_user_/logs/health-check.log`. Like the backup script, the health check resolves paths from its own location so root cron does not inspect `/home/root`.

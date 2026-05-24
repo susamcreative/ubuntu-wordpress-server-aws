@@ -72,15 +72,24 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${RED}ERROR: Run this script as the app user, not root. It uses sudo internally where needed.${NC}" >&2
+    exit 1
+fi
+
 #=============================================================================
 # HELPER FUNCTIONS
 #=============================================================================
+
+mysql_root() {
+    mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$MYSQL_PASS") "$@"
+}
 
 state_is_complete() {
     local flag=$1
     if [ -f "$STATE_FILE" ]; then
         source "$STATE_FILE"
-        [[ "${!flag}" == "true" ]]
+        [[ "${!flag:-}" == "true" ]]
     else
         return 1
     fi
@@ -125,7 +134,7 @@ validate_dbname() {
         return 1
     fi
 
-    if mysql -p"${MYSQL_PASS}" -e "USE ${name}" 2>/dev/null; then
+    if mysql_root -e "USE ${name}" 2>/dev/null; then
         echo -e "${RED}Database already exists${NC}"
         return 1
     fi
@@ -177,8 +186,8 @@ rollback_all() {
 
     # Drop database
     if [[ "${STATE_DB_CREATED:-false}" == "true" ]]; then
-        mysql -p"${MYSQL_PASS}" -e "DROP DATABASE IF EXISTS ${STATE_DBNAME};" 2>/dev/null || true
-        mysql -p"${MYSQL_PASS}" -e "DROP USER IF EXISTS '${STATE_DBUSER}'@'localhost';" 2>/dev/null || true
+        mysql_root -e "DROP DATABASE IF EXISTS ${STATE_DBNAME};" 2>/dev/null || true
+        mysql_root -e "DROP USER IF EXISTS '${STATE_DBUSER}'@'localhost';" 2>/dev/null || true
     fi
 
     rm -f "$STATE_FILE" "$CREDS_FILE"
@@ -259,7 +268,7 @@ setup_mysql_auth() {
     echo ""
 
     # Test connection
-    if ! mysql -p"${MYSQL_PASS}" -e "SELECT 1" &>/dev/null; then
+    if ! mysql_root -e "SELECT 1" &>/dev/null; then
         echo -e "${RED}ERROR: MySQL authentication failed${NC}"
         exit 1
     fi
@@ -363,7 +372,7 @@ step_create_database() {
 
     echo "[2/9] Creating database..."
 
-    if mysql -p"${MYSQL_PASS}" -e "
+    if mysql_root -e "
 CREATE DATABASE ${dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
 CREATE USER '${dbuser}'@'localhost' IDENTIFIED BY '${dbpass}';
 GRANT ALL PRIVILEGES ON ${dbname}.* TO '${dbuser}'@'localhost';
@@ -735,19 +744,22 @@ main() {
 
     # Get input if not resuming
     if [ -z "${domain:-}" ]; then
-        until validate_domain "$domain"; do
+        while true; do
             read -p "Enter domain (e.g., example.com): " domain
+            validate_domain "$domain" && break
         done
 
         check_dns
         select_nginx_template
 
-        until validate_dbname "$dbname"; do
+        while true; do
             read -p "Enter database name: " dbname
+            validate_dbname "$dbname" && break
         done
 
-        until validate_dbuser "$dbuser"; do
+        while true; do
             read -p "Enter database user: " dbuser
+            validate_dbuser "$dbuser" && break
         done
 
         dbpass=$(LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*' < /dev/urandom | head -c 20)

@@ -14,7 +14,7 @@
 # WHAT IT MONITORS:
 #   System Level:
 #     • Disk space (/, /var, /tmp) - Warn: 80%, Critical: 90%
-#     • MySQL service status and connectivity
+#     • MySQL service status
 #     • Nginx service status and config validity
 #     • PHP-FPM service status (auto-detects version)
 #     • Redis service status and connectivity
@@ -59,7 +59,7 @@
 #   State tracked in the app user's logs/.health-check-alerts file
 #
 # CRON SETUP:
-#   0 * * * * cd /home/user/apps && /bin/bash ./health-check.sh >> /home/user/logs/health-check.log 2>&1
+#   0 * * * * cd /home/user/apps && /bin/bash ./health-check.sh --quiet >> /home/user/logs/health-check.log 2>&1
 #
 # REQUIREMENTS:
 #   - WordPress sites in ~/www/
@@ -122,6 +122,8 @@ NC='\033[0m'
 # Runtime flags
 QUIET_MODE=false
 FORCE_WEBHOOK=false
+WEBHOOK_SHOULD_SEND=false
+ALERT_RECORDS=()
 
 #=============================================================================
 # LOGGING
@@ -150,7 +152,8 @@ should_send_alert() {
     local alert_id=$1
     local severity=$2
 
-    # Count issues locally even when webhook notifications are disabled.
+    # Always count detected issues locally. This function only tracks whether
+    # the alert should be included in the webhook notification for this run.
     [ -z "$WEBHOOK_URL" ] && return 0
 
     # Create state file if doesn't exist
@@ -163,7 +166,11 @@ should_send_alert() {
     local existing=$(grep "^${alert_id}|" "$ALERT_STATE_FILE" 2>/dev/null || echo "")
 
     # New alert - send it
-    [ -z "$existing" ] && return 0
+    if [ -z "$existing" ]; then
+        WEBHOOK_SHOULD_SEND=true
+        ALERT_RECORDS+=("${alert_id}|${severity}")
+        return 0
+    fi
 
     # Parse existing alert
     local old_timestamp=$(echo "$existing" | cut -d'|' -f2)
@@ -173,22 +180,34 @@ should_send_alert() {
 
     # Send if severity increased (warning -> critical)
     if [ "$severity" = "critical" ] && [ "$old_severity" = "warning" ]; then
+        WEBHOOK_SHOULD_SEND=true
+        ALERT_RECORDS+=("${alert_id}|${severity}")
         return 0
     fi
 
     # Send if outside throttle window
-    [ $hours_since -ge $ALERT_THROTTLE_HOURS ] && return 0
+    if [ $hours_since -ge $ALERT_THROTTLE_HOURS ]; then
+        WEBHOOK_SHOULD_SEND=true
+        ALERT_RECORDS+=("${alert_id}|${severity}")
+        return 0
+    fi
 
-    # Otherwise throttle (skip)
-    return 1
+    return 0
 }
 
 record_alert() {
     local alert_id=$1
     local severity=$2
     local now=$(date +%s)
+    local record
 
     [ -z "$WEBHOOK_URL" ] && return 0
+
+    for record in "${ALERT_RECORDS[@]}"; do
+        [ "$record" = "${alert_id}|${severity}" ] && break
+    done
+
+    [ "${record:-}" = "${alert_id}|${severity}" ] || return 0
 
     # Remove old entry
     sed -i "/^${alert_id}|/d" "$ALERT_STATE_FILE" 2>/dev/null || true
@@ -641,6 +660,14 @@ get_db_credentials() {
     echo "$dbname $dbuser $dbpass"
 }
 
+mysql_with_credentials() {
+    local dbuser=$1
+    local dbpass=$2
+    shift 2
+
+    mysql --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$@"
+}
+
 check_site_health() {
     local domain=$1
     local site_path="${WEB_ROOT}/${domain}"
@@ -803,7 +830,7 @@ EOF
     # Check database connectivity
     read dbname dbuser dbpass <<< $(get_db_credentials "$site_path")
     if [ "$dbname" != "N/A" ]; then
-        if ! mysql -u"$dbuser" -p"${dbpass}" -e "USE ${dbname}; SELECT 1" &>/dev/null; then
+        if ! mysql_with_credentials "$dbuser" "$dbpass" -e "USE ${dbname}; SELECT 1" &>/dev/null; then
             local alert_id=$(generate_alert_id "database" "$domain")
 
             if should_send_alert "$alert_id" "critical"; then
@@ -1158,7 +1185,7 @@ print_site_health() {
         local site_path="${WEB_ROOT}/${domain}"
         read dbname dbuser dbpass <<< $(get_db_credentials "$site_path")
         if [ "$dbname" != "N/A" ]; then
-            if mysql -u"$dbuser" -p"${dbpass}" -e "USE ${dbname}; SELECT 1" &>/dev/null; then
+            if mysql_with_credentials "$dbuser" "$dbpass" -e "USE ${dbname}; SELECT 1" &>/dev/null; then
                 echo -e "  ${GREEN}✓ Database:              Connected${NC}"
             else
                 echo -e "  ${RED}✗ Database:              Cannot connect [CRITICAL]${NC}"
@@ -1295,7 +1322,7 @@ main() {
     # Send webhook if issues found or forced
     local webhook_sent=false
     if [ -n "$WEBHOOK_URL" ]; then
-        if [ "$total_issues" -gt 0 ] || [ "$FORCE_WEBHOOK" = true ]; then
+        if [ "$WEBHOOK_SHOULD_SEND" = true ] || [ "$FORCE_WEBHOOK" = true ]; then
             local payload=$(generate_webhook_payload "$merged_issues" "$level" "$summary")
             send_webhook "$payload"
             webhook_sent=true
@@ -1303,9 +1330,11 @@ main() {
         fi
     fi
 
-    # Count throttled alerts (issues detected but not in webhook)
-    local all_issues_count=$(echo "$merged_issues" | grep -o '"id":' | wc -l)
     local throttled_count=0
+    if [ -n "$WEBHOOK_URL" ] && [ "$webhook_sent" != true ]; then
+        throttled_count=$(( total_issues - ${#ALERT_RECORDS[@]} ))
+        [ "$throttled_count" -lt 0 ] && throttled_count=0
+    fi
 
     # Print summary
     print_summary "$total_issues" "$critical_count" "$warning_count" "$webhook_sent" "$throttled_count"

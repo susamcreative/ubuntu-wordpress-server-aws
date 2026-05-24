@@ -53,6 +53,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${RED}ERROR: Run this script as the app user, not root. It uses sudo internally where needed.${NC}" >&2
+    exit 1
+fi
+
 #=============================================================================
 # HELPER FUNCTIONS
 #=============================================================================
@@ -68,6 +73,26 @@ trap cleanup EXIT
 error_exit() {
     echo -e "${RED}ERROR: $1${NC}" >&2
     exit 1
+}
+
+mysql_root() {
+    mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$MYSQL_ROOT_PASS") "$@"
+}
+
+mysql_with_credentials() {
+    local dbuser=$1
+    local dbpass=$2
+    shift 2
+
+    mysql --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$@"
+}
+
+mysqldump_with_credentials() {
+    local dbuser=$1
+    local dbpass=$2
+    shift 2
+
+    mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$@"
 }
 
 #=============================================================================
@@ -219,7 +244,7 @@ setup_mysql_auth() {
     echo ""
 
     # Test connection
-    if ! mysql -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" &>/dev/null; then
+    if ! mysql_root -e "SELECT 1" &>/dev/null; then
         error_exit "MySQL authentication failed"
     fi
 
@@ -252,20 +277,20 @@ restore_database() {
     echo "  Creating safety backup of current database..."
     local safety_backup="${BACKUP_ROOT}/${site}/safety_backup_$(date +%y.%m.%d_%H.%M).sql.gz"
     mkdir -p "${BACKUP_ROOT}/${site}"
-    mysqldump -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" 2>/dev/null | gzip > "$safety_backup" || {
+    mysqldump_with_credentials "$DB_USER" "$DB_PASS" "$DB_NAME" 2>/dev/null | gzip > "$safety_backup" || {
         echo -e "${YELLOW}  ⚠ Could not create safety backup (database might not exist)${NC}"
     }
 
     # Drop and recreate database
     echo "  Recreating database..."
-    mysql -p"${MYSQL_ROOT_PASS}" -e "DROP DATABASE IF EXISTS ${DB_NAME}; CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;" 2>/dev/null || error_exit "Failed to recreate database"
+    mysql_root -e "DROP DATABASE IF EXISTS ${DB_NAME}; CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;" 2>/dev/null || error_exit "Failed to recreate database"
 
     # Restore database from dump
     echo "  Importing database dump..."
-    gunzip -c "$sql_file" | mysql -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" 2>/dev/null || error_exit "Failed to import database dump"
+    gunzip -c "$sql_file" | mysql_with_credentials "$DB_USER" "$DB_PASS" "$DB_NAME" 2>/dev/null || error_exit "Failed to import database dump"
 
     # Verify restoration
-    local table_count=$(mysql -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" -e "SHOW TABLES;" 2>/dev/null | wc -l)
+    local table_count=$(mysql_with_credentials "$DB_USER" "$DB_PASS" "$DB_NAME" -e "SHOW TABLES;" 2>/dev/null | wc -l)
     if [ "$table_count" -lt 2 ]; then
         error_exit "Database restoration verification failed (no tables found)"
     fi

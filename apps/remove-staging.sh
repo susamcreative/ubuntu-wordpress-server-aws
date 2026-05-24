@@ -64,6 +64,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo -e "${RED}ERROR: Run this script as the app user, not root. It uses sudo internally where needed.${NC}" >&2
+    exit 1
+fi
+
 #=============================================================================
 # HELPER FUNCTIONS
 #=============================================================================
@@ -71,6 +76,10 @@ NC='\033[0m'
 error_exit() {
     echo -e "${RED}ERROR: $1${NC}" >&2
     exit 1
+}
+
+mysql_root() {
+    mysql --defaults-extra-file=<(printf "[client]\nuser=root\npassword=%s\n" "$MYSQL_ROOT_PASS") "$@"
 }
 
 extract_db_credentials() {
@@ -300,7 +309,7 @@ main() {
         echo ""
 
         # Test MySQL connection
-        if ! mysql -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" &>/dev/null; then
+        if ! mysql_root -e "SELECT 1" &>/dev/null; then
             error_exit "MySQL authentication failed"
         fi
 
@@ -348,20 +357,20 @@ main() {
         echo "[3/6] Removing database..."
 
         # Drop database
-        if mysql -p"${MYSQL_ROOT_PASS}" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null; then
+        if mysql_root -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null; then
             echo -e "${GREEN}✓ Database '${DB_NAME}' dropped${NC}"
         else
             echo -e "${YELLOW}⚠ Failed to drop database '${DB_NAME}'${NC}"
         fi
 
         # Drop user
-        if mysql -p"${MYSQL_ROOT_PASS}" -e "DROP USER IF EXISTS '${DB_USER}'@'${DB_HOST}';" 2>/dev/null; then
+        if mysql_root -e "DROP USER IF EXISTS '${DB_USER}'@'${DB_HOST}';" 2>/dev/null; then
             echo -e "${GREEN}✓ Database user '${DB_USER}' removed${NC}"
         else
             echo -e "${YELLOW}⚠ Failed to drop user '${DB_USER}'${NC}"
         fi
 
-        mysql -p"${MYSQL_ROOT_PASS}" -e "FLUSH PRIVILEGES;" 2>/dev/null || true
+        mysql_root -e "FLUSH PRIVILEGES;" 2>/dev/null || true
     else
         echo "[3/6] No database to remove"
     fi

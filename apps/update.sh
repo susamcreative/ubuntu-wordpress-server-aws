@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+if [ "$(id -u)" -eq 0 ]; then
+  echo "ERROR: Run this script as the app user, not root. It uses sudo internally where needed." >&2
+  exit 1
+fi
+
 # System updates
 sudo apt update && sudo apt upgrade -y && sudo apt dist-upgrade -y
 sudo apt autoclean && sudo apt autoremove -y
