@@ -150,8 +150,8 @@ should_send_alert() {
     local alert_id=$1
     local severity=$2
 
-    # Always send if webhook not configured
-    [ -z "$WEBHOOK_URL" ] && return 1
+    # Count issues locally even when webhook notifications are disabled.
+    [ -z "$WEBHOOK_URL" ] && return 0
 
     # Create state file if doesn't exist
     touch "$ALERT_STATE_FILE" 2>/dev/null || return 0
@@ -187,6 +187,8 @@ record_alert() {
     local alert_id=$1
     local severity=$2
     local now=$(date +%s)
+
+    [ -z "$WEBHOOK_URL" ] && return 0
 
     # Remove old entry
     sed -i "/^${alert_id}|/d" "$ALERT_STATE_FILE" 2>/dev/null || true
