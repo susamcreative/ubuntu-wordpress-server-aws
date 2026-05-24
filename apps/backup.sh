@@ -35,9 +35,11 @@ set -euo pipefail
 # CONFIGURATION
 #=============================================================================
 
-USER=$(whoami)
-WEB_ROOT="/home/${USER}/www"
-BACKUP_ROOT="/home/${USER}/backups"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+APP_HOME="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
+
+WEB_ROOT="${APP_HOME}/www"
+BACKUP_ROOT="${APP_HOME}/backups"
 
 # Site configuration array
 # Format: "domain:frequency"
