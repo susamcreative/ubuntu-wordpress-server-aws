@@ -116,17 +116,20 @@ backup_site() {
 
     echo "Backing up: ${domain}"
 
+    local sql_path="${site_path}/${domain}_${THEDATE}.sql.gz"
+    local archive_path="${BACKUP_ROOT}/${domain}/${domain}_${THEFREQ}_${THEDATE}.tar.gz"
+
     # Create database backup (credentials via process substitution to avoid exposure in ps output)
-    if { mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" | gzip > "${site_path}/${domain}_${THEDATE}.sql.gz"; } 2>> "$ERROR_LOG"; then
+    if { mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" | gzip > "$sql_path"; } 2>> "$ERROR_LOG"; then
         echo "  ✓ Database backup created"
     else
         echo "  ✗ Database backup failed"
-        rm -f "${site_path}/${domain}_${THEDATE}.sql.gz"
+        rm -f "$sql_path"
         return 1
     fi
 
     # Create archive
-    if sudo tar -czf "${BACKUP_ROOT}/${domain}/${domain}_${THEFREQ}_${THEDATE}.tar.gz" \
+    if sudo tar -czf "$archive_path" \
         --exclude="${domain}/wp-content/cache" \
         --exclude="${domain}/wp-content/litespeed" \
         -C "$WEB_ROOT" \
@@ -134,12 +137,12 @@ backup_site() {
         echo "  ✓ Archive created"
     else
         echo "  ✗ Archive creation failed"
-        rm -f "${site_path}/${domain}_${THEDATE}.sql.gz"
+        rm -f "$sql_path" "$archive_path"
         return 1
     fi
 
     # Remove temporary SQL backup
-    rm -f "${site_path}/${domain}_${THEDATE}.sql.gz"
+    rm -f "$sql_path"
     echo "  ✓ ${domain} backup complete"
     echo ""
 
