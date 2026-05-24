@@ -345,32 +345,6 @@ EOF
             issues+=("$issue")
             record_alert "$alert_id" "critical"
         fi
-    else
-        # Test database connectivity
-        if ! sudo mysql -e "SELECT 1" &>/dev/null; then
-            local alert_id=$(generate_alert_id "service" "mysql_connectivity")
-
-            if should_send_alert "$alert_id" "critical"; then
-                local issue=$(cat <<EOF
-{
-  "id": "${alert_id}",
-  "category": "service",
-  "severity": "critical",
-  "resource": "mysql",
-  "message": "MySQL service running but not accepting connections",
-  "details": {
-    "service": "mysql",
-    "status": "running",
-    "connectivity": "failed"
-  },
-  "action": "Check MySQL configuration and logs"
-}
-EOF
-)
-                issues+=("$issue")
-                record_alert "$alert_id" "critical"
-            fi
-        fi
     fi
 
     # Return issues as JSON array
@@ -1081,11 +1055,7 @@ print_system_health() {
 
         # MySQL
         if systemctl is-active --quiet mysql 2>/dev/null || systemctl is-active --quiet mariadb 2>/dev/null; then
-            if sudo mysql -e "SELECT 1" &>/dev/null; then
-                echo -e "  ${GREEN}✓ MySQL Service:         Running${NC}"
-            else
-                echo -e "  ${RED}✗ MySQL Service:         Not accepting connections [CRITICAL]${NC}"
-            fi
+            echo -e "  ${GREEN}✓ MySQL Service:         Running${NC}"
         else
             echo -e "  ${RED}✗ MySQL Service:         Not running [CRITICAL]${NC}"
         fi
