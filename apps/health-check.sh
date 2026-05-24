@@ -56,10 +56,10 @@
 # ALERT THROTTLING:
 #   Same alerts won't be sent more than once per ALERT_THROTTLE_HOURS.
 #   Alerts are re-sent if severity increases (warning → critical).
-#   State tracked in ~/logs/.health-check-alerts
+#   State tracked in the app user's logs/.health-check-alerts file
 #
 # CRON SETUP:
-#   0 * * * * /home/user/apps/health-check.sh >> /home/user/logs/health-check.log 2>&1
+#   0 * * * * cd /home/user/apps && /bin/bash ./health-check.sh >> /home/user/logs/health-check.log 2>&1
 #
 # REQUIREMENTS:
 #   - WordPress sites in ~/www/
@@ -79,10 +79,14 @@ set -euo pipefail
 # CONFIGURATION
 #=============================================================================
 
-USER=$(whoami)
-WEB_ROOT="/home/${USER}/www"
-BACKUP_ROOT="/home/${USER}/backups"
-LOGS_ROOT="/home/${USER}/logs"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+APP_HOME="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
+APP_OWNER="$(stat -c '%U:%G' "$APP_HOME")"
+APP_USER="${APP_OWNER%%:*}"
+
+WEB_ROOT="${APP_HOME}/www"
+BACKUP_ROOT="${APP_HOME}/backups"
+LOGS_ROOT="${APP_HOME}/logs"
 LOG_FILE="${LOGS_ROOT}/health-check.log"
 ALERT_STATE_FILE="${LOGS_ROOT}/.health-check-alerts"
 
@@ -127,6 +131,9 @@ log_operation() {
     mkdir -p "$LOGS_ROOT" 2>/dev/null || true
     touch "$LOG_FILE" 2>/dev/null || true
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE" 2>/dev/null || true
+    if [ "$(id -u)" -eq 0 ] && [ "$APP_USER" != "root" ]; then
+        chown "$APP_OWNER" "$LOGS_ROOT" "$LOG_FILE" 2>/dev/null || true
+    fi
 }
 
 #=============================================================================
@@ -148,6 +155,9 @@ should_send_alert() {
 
     # Create state file if doesn't exist
     touch "$ALERT_STATE_FILE" 2>/dev/null || return 0
+    if [ "$(id -u)" -eq 0 ] && [ "$APP_USER" != "root" ]; then
+        chown "$APP_OWNER" "$ALERT_STATE_FILE" 2>/dev/null || true
+    fi
 
     # Check if alert exists
     local existing=$(grep "^${alert_id}|" "$ALERT_STATE_FILE" 2>/dev/null || echo "")
@@ -587,7 +597,7 @@ get_ssl_expiry_date() {
 
 get_backup_frequency() {
     local domain=$1
-    local backup_script="${WEB_ROOT}/../apps/backup.sh"
+    local backup_script="${APP_HOME}/apps/backup.sh"
 
     if [ ! -f "$backup_script" ]; then
         echo "none"
@@ -763,7 +773,7 @@ EOF
     "frequency": "${backup_freq}",
     "threshold_hours": ${threshold}
   },
-  "action": "Check backup cron job and logs at ~/logs/backup.log"
+  "action": "Check backup cron job and logs at ${LOGS_ROOT}/backup.log"
 }
 EOF
 )
@@ -783,11 +793,11 @@ EOF
         if [ "$error_count" -ge "$ERROR_CRIT_COUNT" ]; then
             severity="critical"
             message="${error_count} errors in last 24h"
-            action="Check error log: tail -f ~/logs/${domain}.error.log"
+            action="Check error log: tail -f ${LOGS_ROOT}/${domain}.error.log"
         elif [ "$error_count" -ge "$ERROR_WARN_COUNT" ]; then
             severity="warning"
             message="${error_count} errors in last 24h"
-            action="Review error log: ~/logs/${domain}.error.log"
+            action="Review error log: ${LOGS_ROOT}/${domain}.error.log"
         fi
 
         if [ -n "$severity" ]; then
@@ -907,15 +917,24 @@ check_backup_cron() {
         return  # No backup log, skip
     fi
 
-    # Check if daily backup ran in last 30 hours
-    local daily_last=$(grep "Backup Run: daily" "$backup_log" 2>/dev/null | tail -1 | grep -oP '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}' || echo "")
+    # Check if daily backup ran in last 30 hours.
+    # backup.sh logs dates as YY.MM.DD_HH.MM because that timestamp is also used in archive names.
+    local daily_raw=$(awk '
+        /Backup Run: daily/ { in_daily = 1; next }
+        in_daily && /^Date: / { print $2; in_daily = 0 }
+    ' "$backup_log" 2>/dev/null | tail -1)
 
-    if [ -n "$daily_last" ]; then
+    if [ -n "$daily_raw" ]; then
+        local daily_last="$daily_raw"
+        if [[ "$daily_raw" =~ ^([0-9]{2})\.([0-9]{2})\.([0-9]{2})_([0-9]{2})\.([0-9]{2})$ ]]; then
+            daily_last="20${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]} ${BASH_REMATCH[4]}:${BASH_REMATCH[5]}:00"
+        fi
+
         local last_epoch=$(date -d "$daily_last" +%s 2>/dev/null || echo "0")
         local now_epoch=$(date +%s)
-        local hours_since=$(( ($now_epoch - $last_epoch) / 3600 ))
+        local hours_since=$(( (now_epoch - last_epoch) / 3600 ))
 
-        if [ "$hours_since" -gt 30 ]; then
+        if [ "$last_epoch" -gt 0 ] && [ "$hours_since" -gt 30 ]; then
             local alert_id=$(generate_alert_id "cron" "backup_daily")
 
             if should_send_alert "$alert_id" "warning"; then

@@ -20,9 +20,9 @@
 #   - Monthly backups: 366 days (12 months)
 #
 # CRON SETUP:
-#   00 2 * * * /home/user/apps/backup.sh daily >> /home/user/logs/backup.log 2>&1
-#   30 2 * * 1 /home/user/apps/backup.sh weekly >> /home/user/logs/backup.log 2>&1
-#   00 3 1 * * /home/user/apps/backup.sh monthly >> /home/user/logs/backup.log 2>&1
+#   00 2 * * * cd /home/user/apps && /bin/bash ./backup.sh daily >> /home/user/logs/backup.log 2>&1
+#   30 2 * * 1 cd /home/user/apps && /bin/bash ./backup.sh weekly >> /home/user/logs/backup.log 2>&1
+#   00 3 1 * * cd /home/user/apps && /bin/bash ./backup.sh monthly >> /home/user/logs/backup.log 2>&1
 #
 # ADDING NEW SITES:
 #   Sites are automatically added to this array by add-site.sh
@@ -37,9 +37,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 APP_HOME="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
+APP_OWNER="$(stat -c '%U:%G' "$APP_HOME")"
+APP_USER="${APP_OWNER%%:*}"
 
 WEB_ROOT="${APP_HOME}/www"
 BACKUP_ROOT="${APP_HOME}/backups"
+LOGS_ROOT="${APP_HOME}/logs"
+ERROR_LOG="${LOGS_ROOT}/backup-errors.log"
 
 # Site configuration array
 # Format: "domain:frequency"
@@ -74,6 +78,12 @@ case "$FREQUENCY" in
         ;;
 esac
 
+mkdir -p "$LOGS_ROOT"
+touch "$ERROR_LOG"
+if [ "$(id -u)" -eq 0 ] && [ "$APP_USER" != "root" ]; then
+    chown "$APP_OWNER" "$LOGS_ROOT" "$ERROR_LOG" 2>/dev/null || true
+fi
+
 #=============================================================================
 # BACKUP FUNCTIONS
 #=============================================================================
@@ -107,7 +117,7 @@ backup_site() {
     echo "Backing up: ${domain}"
 
     # Create database backup (credentials via process substitution to avoid exposure in ps output)
-    if mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" 2>/dev/null | gzip > "${site_path}/${domain}_${THEDATE}.sql.gz"; then
+    if { mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" | gzip > "${site_path}/${domain}_${THEDATE}.sql.gz"; } 2>> "$ERROR_LOG"; then
         echo "  ✓ Database backup created"
     else
         echo "  ✗ Database backup failed"
@@ -117,10 +127,10 @@ backup_site() {
 
     # Create archive
     if sudo tar -czf "${BACKUP_ROOT}/${domain}/${domain}_${THEFREQ}_${THEDATE}.tar.gz" \
-        --exclude='wp-content/cache' \
+        --exclude="${domain}/wp-content/cache" \
         --exclude="${domain}/wp-content/litespeed" \
         -C "$WEB_ROOT" \
-        "$domain" 2>/dev/null; then
+        "$domain" 2>> "$ERROR_LOG"; then
         echo "  ✓ Archive created"
     else
         echo "  ✗ Archive creation failed"
@@ -219,15 +229,15 @@ echo "Cleaning up old backups..."
 case "$FREQUENCY" in
     daily)
         echo "Removing daily backups older than 31 days..."
-        sudo find "$BACKUP_ROOT" -name "*_daily_*" -type f -mtime +31 -delete 2>/dev/null || true
+        sudo find "$BACKUP_ROOT" -name "*_daily_*" -type f -mtime +31 -delete 2>> "$ERROR_LOG" || true
         ;;
     weekly)
         echo "Removing weekly backups older than 91 days..."
-        sudo find "$BACKUP_ROOT" -name "*_weekly_*" -type f -mtime +91 -delete 2>/dev/null || true
+        sudo find "$BACKUP_ROOT" -name "*_weekly_*" -type f -mtime +91 -delete 2>> "$ERROR_LOG" || true
         ;;
     monthly)
         echo "Removing monthly backups older than 366 days..."
-        sudo find "$BACKUP_ROOT" -name "*_monthly_*" -type f -mtime +366 -delete 2>/dev/null || true
+        sudo find "$BACKUP_ROOT" -name "*_monthly_*" -type f -mtime +366 -delete 2>> "$ERROR_LOG" || true
         ;;
 esac
 

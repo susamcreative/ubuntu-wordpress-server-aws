@@ -85,9 +85,9 @@ sudo crontab -e
 Add these lines:
 ```
 # WordPress Auto Backup
-00 2 * * * /home/_user_/apps/backup.sh daily >> /home/_user_/logs/backup.log 2>&1
-30 2 * * 1 /home/_user_/apps/backup.sh weekly >> /home/_user_/logs/backup.log 2>&1
-00 3 1 * * /home/_user_/apps/backup.sh monthly >> /home/_user_/logs/backup.log 2>&1
+00 2 * * * cd /home/_user_/apps && /bin/bash ./backup.sh daily >> /home/_user_/logs/backup.log 2>&1
+30 2 * * 1 cd /home/_user_/apps && /bin/bash ./backup.sh weekly >> /home/_user_/logs/backup.log 2>&1
+00 3 1 * * cd /home/_user_/apps && /bin/bash ./backup.sh monthly >> /home/_user_/logs/backup.log 2>&1
 ```
 
 This will execute:
@@ -95,7 +95,9 @@ This will execute:
 - **Weekly backups**: Every Monday at 2:30 AM
 - **Monthly backups**: 1st day of each month at 3:00 AM
 
-All output is logged to `/home/_user_/logs/backup.log`.
+All output is logged to `/home/_user_/logs/backup.log`. Backup command errors are logged to `/home/_user_/logs/backup-errors.log`.
+
+The cron entries can live in root's crontab for unattended permission safety. The backup script resolves `/home/_user_` from its own location, so it does not depend on `whoami`.
 
 ### Monitoring Backups
 
@@ -228,7 +230,7 @@ sudo crontab -e
 Add this line:
 ```
 # WordPress Health Monitoring (runs hourly)
-0 * * * * /home/_user_/apps/health-check.sh >> /home/_user_/logs/health-check.log 2>&1
+0 * * * * cd /home/_user_/apps && /bin/bash ./health-check.sh >> /home/_user_/logs/health-check.log 2>&1
 ```
 
-This will run health checks every hour and log all output to `/home/_user_/logs/health-check.log`.
+This will run health checks every hour and log all output to `/home/_user_/logs/health-check.log`. Like the backup script, the health check resolves paths from its own location so root cron does not inspect `/home/root`.
