@@ -8,6 +8,8 @@
 # DESCRIPTION:
 #   Configures nginx and SSL for staging WordPress sites created by cloning plugins
 #   (WP Time Capsule, WP Staging, Duplicator, etc.). Staging-platform agnostic.
+#   Staging hostnames use the staging.<parent-domain> convention. The WordPress
+#   files may still live under the parent site, such as ~/www/example.com/staging/.
 #
 # WHAT IT DOES:
 #   1. Validates parent production site exists
@@ -22,7 +24,6 @@
 # COMMON STAGING LOCATIONS:
 #   ~/www/example.com/staging/              (WP Time Capsule)
 #   ~/www/example.com/wp-content/staging/   (Some plugins)
-#   ~/www/example-staging.com/              (Sibling staging domain)
 #   ~/www/staging.example.com/              (Manual/separate)
 #
 # REQUIREMENTS:
@@ -95,46 +96,17 @@ validate_wordpress() {
 
 extract_base_domain() {
     local subdomain=$1
+    # Extract base domain from subdomain (staging.example.com -> example.com)
     echo "$subdomain" | sed 's/^[^.]*\.//'
 }
 
-default_staging_domain() {
-    local parent=$1
-    local label="${parent%%.*}"
-    local base="${parent#*.}"
-
-    if [ "$base" != "$parent" ]; then
-        echo "${label}-staging.${base}"
-    else
-        echo "staging-${parent}"
-    fi
-}
-
-is_staging_domain() {
-    local domain=$1
-
-    if [[ "$domain" == staging.* ]] || [[ "$domain" == *.staging.* ]] || [[ "$domain" == staging-*.* ]] || [[ "$domain" == *-staging.* ]]; then
-        return 0
-    fi
-
-    return 1
-}
-
-is_staging_for_parent() {
-    local staging=$1
+is_subdomain_of() {
+    local subdomain=$1
     local parent=$2
-    local label="${parent%%.*}"
-    local base="${parent#*.}"
+    local base
+    base=$(extract_base_domain "$subdomain")
 
-    if [[ "$staging" == "staging.${parent}" ]] || [[ "$staging" == "staging-${parent}" ]]; then
-        return 0
-    fi
-
-    if [ "$base" != "$parent" ] && [[ "$staging" == "${label}-staging.${base}" ]]; then
-        return 0
-    fi
-
-    return 1
+    [[ "$base" == "$parent" ]]
 }
 
 #=============================================================================
@@ -170,21 +142,24 @@ main() {
     echo ""
 
     # Step 2: Get staging subdomain
-    echo "Step 2: Define staging domain"
+    echo "Step 2: Define staging subdomain"
     echo ""
 
-    default_staging=$(default_staging_domain "$parent_domain")
-    read -p "Enter staging domain [${default_staging}]: " staging_domain
-    staging_domain=${staging_domain:-$default_staging}
+    read -p "Enter staging subdomain (e.g., staging.${parent_domain}): " staging_domain
 
-    # Validate domain format
+    # Validate subdomain format
     if [[ ! "$staging_domain" =~ ^[a-z0-9.-]+\.[a-z]+$ ]]; then
         error_exit "Invalid domain format. Use lowercase, numbers, dots, hyphens only"
     fi
 
-    # Validate it is an explicit staging domain for this parent site.
-    if ! is_staging_domain "$staging_domain" || ! is_staging_for_parent "$staging_domain" "$parent_domain"; then
-        error_exit "Staging domain must be explicit and related to ${parent_domain}. Use ${default_staging}, staging.${parent_domain}, or staging-${parent_domain}"
+    # Validate it's a subdomain of parent
+    if ! is_subdomain_of "$staging_domain" "$parent_domain"; then
+        error_exit "Staging domain must be a subdomain of ${parent_domain}"
+    fi
+
+    # Validate staging hostname convention
+    if [[ "$staging_domain" != "staging.${parent_domain}" ]]; then
+        error_exit "Staging domain must use the staging.${parent_domain} convention"
     fi
 
     # Check if nginx config already exists
@@ -205,10 +180,8 @@ main() {
     search_paths=(
         "${WEB_ROOT}/${parent_domain}/staging"
         "${WEB_ROOT}/${parent_domain}/wp-content/staging"
-        "${WEB_ROOT}/${default_staging}"
         "${WEB_ROOT}/staging.${parent_domain}"
         "${WEB_ROOT}/${parent_domain}_staging"
-        "${WEB_ROOT}/staging-${parent_domain}"
     )
 
     suggestions=()

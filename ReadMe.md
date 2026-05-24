@@ -64,6 +64,7 @@ For faster setup with validation and error handling:
 
 - **`apps/setup-staging-nginx.sh`** - Configure nginx/SSL for staging sites
   - Auto-discovers staging WordPress installations
+  - Uses `staging.<parent-domain>` hostnames; files can live under `/staging`
   - Creates nginx configuration without caching
   - Smart SSL certificate detection (wildcard or specific)
   - Blocks search engines automatically

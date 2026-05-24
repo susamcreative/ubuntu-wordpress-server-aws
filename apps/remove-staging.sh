@@ -9,6 +9,7 @@
 # DESCRIPTION:
 #   Safely removes a staging WordPress site including nginx configuration,
 #   SSL certificate, database, files, and logs. Multiple confirmations required.
+#   Only staging.<parent-domain> hostnames are treated as staging sites.
 #
 # WHAT IT DOES:
 #   1. Identifies staging site to remove (interactive or via argument)
@@ -122,7 +123,7 @@ is_wildcard_cert() {
 is_staging_domain() {
     local domain=$1
 
-    if [[ "$domain" == staging.* ]] || [[ "$domain" == *.staging.* ]] || [[ "$domain" == staging-*.* ]] || [[ "$domain" == *-staging.* ]]; then
+    if [[ "$domain" == staging.* ]]; then
         return 0
     fi
 
@@ -204,7 +205,7 @@ main() {
     fi
 
     if ! is_staging_domain "$staging_domain"; then
-        error_exit "Refusing to remove non-staging domain with remove-staging.sh: ${staging_domain}. Use remove-site.sh for dev or production sites."
+        error_exit "Refusing to remove non-staging domain with remove-staging.sh: ${staging_domain}. Use a staging.<parent-domain> hostname, or use remove-site.sh for dev/production sites."
     fi
 
     echo ""

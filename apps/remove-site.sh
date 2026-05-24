@@ -182,10 +182,8 @@ is_wildcard_cert() {
 find_staging_sites_for_domain() {
     local parent_domain=$1
     local staging_sites=()
-    local parent_label="${parent_domain%%.*}"
-    local parent_base="${parent_domain#*.}"
 
-    # Look for nginx configs that are explicit staging sites for this domain.
+    # Look for nginx configs that follow the staging.<parent-domain> convention.
     if [ -d "/etc/nginx/sites-available" ]; then
         for conf in /etc/nginx/sites-available/*.conf; do
             if [ -f "$conf" ]; then
@@ -196,9 +194,7 @@ find_staging_sites_for_domain() {
                     continue
                 fi
 
-                if [[ "$conf_domain" == "staging.${parent_domain}" ]] || [[ "$conf_domain" == "staging-${parent_domain}" ]]; then
-                    staging_sites+=("$conf_domain")
-                elif [ "$parent_base" != "$parent_domain" ] && [[ "$conf_domain" == "${parent_label}-staging.${parent_base}" ]]; then
+                if [[ "$conf_domain" == "staging.${parent_domain}" ]]; then
                     staging_sites+=("$conf_domain")
                 fi
             fi
@@ -211,9 +207,9 @@ find_staging_sites_for_domain() {
 is_staging_site() {
     local domain=$1
 
-    # Only treat explicit staging-style names as staging. Ordinary subdomains
-    # such as app.example.com or client.dev.example.com are regular sites.
-    if [[ "$domain" == staging.* ]] || [[ "$domain" == *.staging.* ]] || [[ "$domain" == staging-*.* ]] || [[ "$domain" == *-staging.* ]]; then
+    # Only treat staging.<parent-domain> hostnames as staging. Ordinary dev
+    # sites such as example.dev.susam.co remain regular sites.
+    if [[ "$domain" == staging.* ]]; then
         return 0
     fi
 
