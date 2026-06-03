@@ -16,7 +16,7 @@ The backup system uses a single consolidated script (`backup.sh`) that manages a
 
 ### How It Works
 
-**Automated Configuration**: Sites are automatically added to the backup configuration when using `add-site.sh`. The script prompts for backup frequency (daily, weekly, or monthly) and adds the site to the configuration.
+**The registry drives backups.** `backup.sh` reads the site registry (`~/apps/sites.d/*.conf`) and backs up each site according to its `BACKUP_FREQ`. Sites created with `create-site.sh` are registered automatically; manually-built sites are registered by hand (see "Register the site" in the WordPress guide). There is no SITES array to edit.
 
 **Cascading Backup Logic**:
 - **Daily backups** → backs up sites configured as "daily"
@@ -32,28 +32,24 @@ This ensures that every site gets at least monthly backups, while critical sites
 - Weekly backups: 91 days (3 months)
 - Monthly backups: 366 days (12 months)
 
-### Manual Site Configuration
+### Setting a site's backup frequency
 
-If you need to manually add a site to backups (not using `add-site.sh`), edit the backup script:
+A site's backup frequency is the `BACKUP_FREQ` field in its registry record. To change it, edit the record (or `create-site.sh` sets it at creation):
 
 ```bash
-nano ~/apps/backup.sh
+nano ~/apps/sites.d/yourdomain.com.conf
+# BACKUP_FREQ="daily"      # daily | weekly | monthly | none
 ```
 
-Add your site to the SITES array:
-```bash
-SITES=(
-    "example.com:daily"
-    "anothersite.com:weekly"
-    "testsite.dev:monthly"
-)
-```
+**Frequencies**: `daily`, `weekly`, `monthly`, or `none` (excluded from backups). No need to create the backup directory — `backup.sh` creates it on first run.
 
-**Format**: `"domain:frequency"` where frequency is `daily`, `weekly`, or `monthly`
+### Instance configuration (server.conf)
 
-Make sure the backup directory exists:
+Thresholds, the webhook URL, retention periods, and the certbot/admin email live in `~/apps/server.conf` (copied from `server.conf.example`). Scripts fall back to built-in defaults if it is absent:
+
 ```bash
-mkdir -p ~/backups/yourdomain.com
+cp ~/apps/server.conf.example ~/apps/server.conf
+nano ~/apps/server.conf
 ```
 
 ### Testing Backups

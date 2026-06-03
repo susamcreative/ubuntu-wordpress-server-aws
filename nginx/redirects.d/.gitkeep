@@ -1,0 +1,2 @@
+# Promotion redirect blocks are written here on the server by promote-site.sh.
+# This .gitkeep keeps the (otherwise empty) directory tracked so it ships via git/scp.

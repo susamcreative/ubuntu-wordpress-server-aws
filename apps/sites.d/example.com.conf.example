@@ -1,0 +1,32 @@
+# <domain>.conf — one registry record per site (Task P1.4, DESIGN §5.2)
+# Hand-editable: change a value, save. A syntax error breaks only this one record.
+# Real records (apps/sites.d/*.conf) are instance state and are never committed.
+
+# --- Identity ---
+DOMAIN="example.com"            # FQDN; must match the filename
+TYPE="production"              # production | dev | staging | blueprint
+PARENT=""                      # provenance: blueprint or production parent ("" if none)
+STATUS="active"               # creating | active | promoting | removing
+STATUS_SINCE=""               # epoch seconds of the last STATUS change (script-managed)
+CREATED="2026-06-01"
+PROTECTED="false"             # true = refuse all destructive operations
+
+# --- Bindings (the provenance record; passwords stay in wp-config.php) ---
+DB_NAME="example_db"
+DB_USER="example_usr"
+DB_HOST="localhost"
+TABLE_PREFIX="kjq3x8a_"
+DOC_ROOT="/home/user/www/example.com"
+
+# --- Policy (defaults come from TYPE; per-site override allowed) ---
+BACKUP_FREQ="daily"            # daily | weekly | monthly | none
+SSL_MODE="own"                # own | wildcard:<cert-domain> | none
+INDEXING="allowed"            # allowed | blocked
+
+# --- Blueprint-only ---
+NAMESPACE=""                   # e.g. "dev.example.com" — enables subdomain UX for clones
+
+# --- Promotion history (set by promote-site.sh) ---
+PROMOTED_FROM=""
+PROMOTED_DATE=""
+REDIRECT_FROM=""

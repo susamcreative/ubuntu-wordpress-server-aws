@@ -1,3 +1,8 @@
+# Instance state — never commit real registry records or server config (P1.7, DESIGN §14.4)
+apps/server.conf
+apps/sites.d/*.conf
+apps/sites.d/.*.state
+
 # Mac Shortcut Folders
 _backup
 Assets

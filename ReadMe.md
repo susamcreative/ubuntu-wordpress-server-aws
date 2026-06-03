@@ -1,20 +1,26 @@
 # Ubuntu WordPress Server
 
-Production-ready WordPress hosting on Ubuntu 24.04 LTS with Nginx, PHP 8.5, MariaDB 11.8, and Redis.
+Production-ready WordPress hosting on Ubuntu 24.04 LTS with Nginx, PHP 8.5, MariaDB 10.11, and Redis.
 
 This repository provides optimized configurations for nginx (with SSL/TLS), oh-my-zsh terminal customization, and automated backup scripts for WordPress.
 
 The documentation is platform-agnostic and works with any VPS provider (Hetzner, DigitalOcean, Vultr, AWS, etc.).
 
-## Documentation
+The documentation has two layers: a **setup tutorial** that builds the server (follow in order, once), and an **operator reference** for the registry-based management system that runs on it.
 
-### Core Setup (Follow in Order)
+### Build the server (follow in order)
 
 1. [Initial Setup](docs/Initial%20Setup.md) - Server creation and initial configuration
 2. [Install LEMP Stack](docs/Install%20LEMP.md) - PHP, MariaDB, Nginx, Redis installation
 3. [WordPress](docs/Wordpress.md) - First WordPress site setup
 4. [SSL Let's Encrypt](docs/SSL%20Let's%20Encrypt.md) - Free SSL certificates
 5. [Automation](docs/Automation.md) - Automated backups and maintenance
+
+### Operate the system (reference)
+
+- [Managing Sites](docs/Managing%20Sites.md) - Create, list, remove, promote; blueprint, staging, restore
+- [Configuration Reference](docs/Configuration%20Reference.md) - Every `server.conf` and registry field
+- Every script in `apps/` supports `--help`
 
 ### Additional Workflows
 
@@ -23,14 +29,14 @@ The documentation is platform-agnostic and works with any VPS provider (Hetzner,
 
 ## Automation Scripts
 
-For faster setup with validation and error handling:
+The scripts are driven by a **site registry** (`apps/sites.d/*.conf`, one hand-editable file per site) that records which database, files, and certificate belong to each site — so backups, monitoring, and removal never have to guess. Run any script with `--help` for its usage.
 
-- **`apps/add-site.sh`** - Automated WordPress site creation
-  - Validates prerequisites and DNS
-  - Creates database, downloads WordPress
+- **`apps/create-site.sh`** - Create a WordPress site (vanilla, or cloned from a blueprint)
+  - Validates prerequisites, DNS, and free disk
+  - Registers the site (intent-first), creates database, installs/clones WordPress
   - Configures nginx and obtains SSL
-  - Adds site to consolidated backup configuration
-  - Resumable if interrupted
+  - Resumable if interrupted (`add-site.sh` remains as an alias for one release)
+- **`apps/promote-site.sh`** - Promote a dev site to its production domain (cert-first, dev domain becomes a 301 redirect)
 
 - **`apps/list-sites.sh`** - Display WordPress site inventory
   - Shows status, storage, SSL, backups, errors
@@ -84,7 +90,7 @@ Run interactive scripts as the app user, not with `sudo`; they call `sudo` inter
 
 - Ubuntu 24.04 LTS
 - PHP 8.5
-- MariaDB 11.8 LTS
+- MariaDB 10.11 LTS
 - Nginx Mainline (1.29+)
 - Redis 7.0+
 - Certbot (APT-based)

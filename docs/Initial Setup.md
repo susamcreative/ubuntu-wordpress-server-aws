@@ -331,12 +331,23 @@ So, under `/home/_user_` it should look like
 Create the necessary folders
 ```
 mkdir /home/_user_/apps
+mkdir /home/_user_/apps/sites.d
 mkdir /home/_user_/backups
 mkdir /home/_user_/cache
 mkdir /home/_user_/logs
 mkdir /home/_user_/www
 mkdir /home/_user_/www/html
 ```
+
+`apps/sites.d/` holds the **site registry** — one file per site recording which database, files, and certificate belong to it (see the WordPress and Automation guides).
+
+### Deploy the management scripts
+
+Upload the `apps/` directory from this repo to the server (mirrors how `nginx/` is uploaded later):
+```
+scp -r apps/* _server_alias_:/home/_user_/apps/
+```
+The scripts and their `lib/` are deployed together as one unit. (`apps/deploy.sh` is an optional convenience that does this with safety rails.)
 
 Set correct permissions for Ubuntu 24.04
 ```

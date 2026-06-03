@@ -184,6 +184,23 @@ For page caching install Nginx Cache by Till Krüss
 
 Go to Tools -> Nginx Cache and change `Cache Zone Path` to `/home/_user_/cache/_domain_name_`
 
+## Register the Site
+
+Tell the management system about this site by creating its **registry record**. This is what makes it visible to backups, health checks, and safe removal. The registry is the single source of truth for which database and files belong to each site, so removal and restore never have to guess.
+
+```bash
+cp ~/apps/sites.d/example.com.conf.example ~/apps/sites.d/_domain_name_.conf
+nano ~/apps/sites.d/_domain_name_.conf
+```
+
+Fill in the fields to match what you just created — `DOMAIN`, `DB_NAME`, `DB_USER`, `TABLE_PREFIX`, `DOC_ROOT` (`/home/_user_/www/_domain_name_`), and `BACKUP_FREQ`. Verify it:
+
+```bash
+~/apps/list-sites.sh        # the site appears, cross-checked against reality
+```
+
+(When you use `create-site.sh` instead of these manual steps, the record is written for you.)
+
 ## Upgrade Wordpress
 
 When there is an update available, login to the server and change permissions

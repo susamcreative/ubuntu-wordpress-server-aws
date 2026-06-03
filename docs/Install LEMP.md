@@ -47,12 +47,12 @@ sudo service php8.5-fpm restart
 
 ## Install MariaDB
 
-Add the MariaDB repository for the latest LTS version
+Add the MariaDB repository for the 10.11 LTS series
 ```
-curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=11.8
+curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=10.11
 ```
 
-Install MariaDB 11.8 LTS
+Install MariaDB 10.11 LTS
 ```
 sudo apt update
 sudo apt install mariadb-server mariadb-client
@@ -63,14 +63,22 @@ Secure the installation
 sudo mysql_secure_installation
 ```
 
-Choose a password and don't forget to save it.
+**Important:** the management scripts authenticate as MySQL root with a **password**
+(`MYSQL_ROOT_PASS`), so root must have one — do NOT leave it on unix_socket-only auth.
 
-- Type `y` to switch to unix_socket authentication.
-- Type `n` to change the root password.
-- Type `y` to remove anonymous users.
-- Type `y` to disallow root login remotely.
-- Type `y` to remove test database and access to it.
-- Type `y` to reload privilege tables.
+- Type `n` for "switch to unix_socket authentication" (keep password auth)
+- Type `y` for "change/set the root password", choose a strong one and save it
+- Type `y` to remove anonymous users
+- Type `y` to disallow root login remotely
+- Type `y` to remove test database and access to it
+- Type `y` to reload privilege tables
+
+If root still has no password afterward, set one explicitly:
+```
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'YOUR_STRONG_PASSWORD'; FLUSH PRIVILEGES;"
+```
+The lifecycle scripts read this via the `MYSQL_ROOT_PASS` environment variable
+(backups don't need it — they read each site's credentials from wp-config.php).
 
 ## Install Nginx
 
@@ -78,16 +86,25 @@ Choose a password and don't forget to save it.
 [source 2](https://spinupwp.com/hosting-wordpress-yourself-nginx-php-mysql/)
 [source 3](https://codex.wordpress.org/Nginx)
 
-Add the nginx mainline repository and update the package lists
+Add the official nginx **mainline** repository (the templates use `http2 on;`, which
+requires nginx ≥ 1.25.1 — the Ubuntu stable 1.24 package will fail).
 ```
-sudo add-apt-repository ppa:ondrej/nginx-mainline -y
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/ubuntu $(lsb_release -cs) nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+printf 'Package: nginx*\nPin: origin nginx.org\nPin-Priority: 900\n' | sudo tee /etc/apt/preferences.d/nginx-org
 sudo apt update
-sudo apt dist-upgrade -y
 ```
 
 Install nginx
 ```
 sudo apt install nginx -y
+nginx -v   # confirm 1.25.1 or newer
+```
+
+Generate the Diffie-Hellman parameters the SSL config references (do this now, before
+any site config is loaded):
+```
+sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
 ```
 
 **Note**: The nginx mainline branch receives all new features and bug fixes. It's recommended over the stable branch by nginx.org for production use.
