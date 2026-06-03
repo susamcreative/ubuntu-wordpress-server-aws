@@ -75,6 +75,12 @@
 
 set -euo pipefail
 
+# --help is handled first, before any environment-specific setup below (the
+# config block uses Linux `stat -c`, so self-documentation must not depend on it).
+case "${1:-}" in -h|--help)
+    awk 'NR==1&&/^#!/{next} /^#/{sub(/^#[[:space:]]?/,"");print;next}{exit}' "$0"; exit 0 ;;
+esac
+
 #=============================================================================
 # CONFIGURATION
 #=============================================================================
@@ -1333,4 +1339,4 @@ main() {
     log_operation "Health check completed - Issues: $total_issues (Critical: $critical_count, Warning: $warning_count)"
 }
 
-main "$@"
+[ "${BASH_SOURCE[0]}" = "${0}" ] && main "$@"

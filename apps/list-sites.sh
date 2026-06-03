@@ -605,6 +605,9 @@ display_detailed() {
 #=============================================================================
 
 main() {
+    case "${1:-}" in -h|--help)
+        awk 'NR==1&&/^#!/{next} /^#/{sub(/^#[[:space:]]?/,"");print;next}{exit}' "$0"; exit 0 ;;
+    esac
     local mode="compact"
     local target_site=""
 
@@ -625,4 +628,4 @@ main() {
     fi
 }
 
-main "$@"
+[ "${BASH_SOURCE[0]}" = "${0}" ] && main "$@"

@@ -61,6 +61,13 @@ do_restore_files() {    # <domain> <archive>
     local domain=$1 archive=$2 docroot leaf tmp extracted preserve=''
     registry_read "$domain" || { warning "not registered: $domain"; return 1; }
     docroot="${REG_DOC_ROOT}"; leaf="$(basename "$docroot")"
+    # Containment: this rewrites the whole docroot, so refuse if a registered nested
+    # site (e.g. a staging clone) lives inside it — restoring the parent must not
+    # silently wipe a child. Reuses the removal guard's decision.
+    if ! can_remove_docroot "$docroot" "$domain"; then
+        warning "restore would delete a nested registered site inside ${docroot}: ${GUARD_REASON} — aborting file restore"
+        return 1
+    fi
     tmp="$(mktemp -d)"
     tar -xzf "$archive" -C "$tmp" "$leaf" 2>/dev/null || { warning "site files not in archive"; rm -rf "$tmp"; return 1; }
     extracted="$tmp/$leaf"

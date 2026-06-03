@@ -16,6 +16,7 @@ SCRIPT_NAME="deploy.sh"
 
 _DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO="$(cd -- "${_DIR}/.." && pwd -P)"
+source "${_DIR}/lib/common.sh"   # show_help, colors, logging
 
 # Never --delete. Excludes protect instance state if it leaked into the checkout.
 DRY=()

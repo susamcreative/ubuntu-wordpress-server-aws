@@ -276,16 +276,21 @@ safe_remove_certificate() { # <domain>
     log_operation "remove-certificate" "$domain"
 }
 
+# Validate the live nginx config. A seam: tests redefine this (and set NGINX_SUDO=""
+# to drop the privilege prefix) to exercise the rollback path without a real nginx.
+# Production behaviour is unchanged — defaults to `sudo nginx -t`.
+nginx_validate() { ${NGINX_SUDO-sudo} nginx -t >/dev/null 2>&1; }
+
 # Write an nginx config and roll it back if it breaks `nginx -t`.
 safe_write_nginx_config() { # <path> <<<content (stdin)
     local path=$1 tmp
     tmp="$(mktemp)" || return 1
     cat > "$tmp"
-    sudo cp "$tmp" "$path"; rm -f "$tmp"
-    if sudo nginx -t >/dev/null 2>&1; then
+    ${NGINX_SUDO-sudo} cp "$tmp" "$path"; rm -f "$tmp"
+    if nginx_validate; then
         return 0
     fi
-    sudo rm -f "$path"
+    ${NGINX_SUDO-sudo} rm -f "$path"
     warning "nginx -t failed — removed $path and aborted"
     return 1
 }
