@@ -16,6 +16,7 @@ source "${_DIR}/lib/registry.sh"
 source "${_DIR}/lib/guards.sh"
 source "${_DIR}/lib/rebind.sh"
 require_lib 1
+load_server_conf        # ADMIN_EMAIL / CERTBOT_EMAIL from ~/apps/server.conf
 
 # --- PURE: domain input resolution (DESIGN §8.1, the dots-signal table) --------
 # Echoes the resolved FQDN and returns 0; on reject/ambiguous sets RESOLVE_REASON

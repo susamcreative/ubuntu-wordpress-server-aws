@@ -116,6 +116,10 @@ ERROR_CRIT_COUNT=50
 # Alert throttling (hours) - same alert won't be sent within this period
 ALERT_THROTTLE_HOURS=24
 
+# Instance overrides: ~/apps/server.conf (if present) wins over the defaults above
+# — this is what makes WEBHOOK_URL and the thresholds configurable per server.
+[ -f "${SCRIPT_DIR}/server.conf" ] && . "${SCRIPT_DIR}/server.conf"
+
 # Colors for console output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

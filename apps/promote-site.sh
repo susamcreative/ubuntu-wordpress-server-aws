@@ -19,6 +19,7 @@ source "${_DIR}/lib/registry.sh"
 source "${_DIR}/lib/guards.sh"
 source "${_DIR}/lib/rebind.sh"
 require_lib 1
+load_server_conf        # CERTBOT_EMAIL from ~/apps/server.conf
 
 # --- nginx / SSL (real on the server; tests override) -------------------------
 
