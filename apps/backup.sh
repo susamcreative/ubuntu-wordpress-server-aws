@@ -1,248 +1,166 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# WordPress Backup Script - Consolidated backup system
+# backup.sh — registry-driven consolidated backups (Task P2.4, DESIGN §8.5)
 #
-# USAGE:
-#   ./apps/backup.sh {daily|weekly|monthly}
+# USAGE:  ./apps/backup.sh {daily|weekly|monthly}
 #
-# DESCRIPTION:
-#   Backs up WordPress sites based on configured frequency with cascading logic.
-#   Reads database credentials from wp-config.php on-the-fly (no hardcoded credentials).
+# Sites and their frequencies come from the REGISTRY (apps/sites.d/*.conf,
+# BACKUP_FREQ), not a hardcoded SITES array. Cascading logic:
+#   daily   → sites with BACKUP_FREQ=daily
+#   weekly  → daily + weekly
+#   monthly → all sites with any frequency (not 'none')
 #
-# CASCADING FREQUENCY LOGIC:
-#   - backup.sh daily   → backs up only sites with :daily frequency
-#   - backup.sh weekly  → backs up sites with :daily AND :weekly frequencies
-#   - backup.sh monthly → backs up ALL sites (daily, weekly, AND monthly)
+# Each archive is SELF-DESCRIBING (site files + SQL dump + the site's registry
+# record). The SQL dump is staged OUTSIDE the web root (never publicly downloadable).
+# Database credentials are read from wp-config.php and cross-checked against the
+# registry; a mismatch skips the site with a critical message (never backs up the
+# wrong database).
 #
-# RETENTION PERIODS:
-#   - Daily backups:   31 days (4 weeks)
-#   - Weekly backups:  91 days (3 months)
-#   - Monthly backups: 366 days (12 months)
-#
-# CRON SETUP:
-#   00 2 * * * cd /home/user/apps && /bin/bash ./backup.sh daily >> /home/user/logs/backup.log 2>&1
-#   30 2 * * 1 cd /home/user/apps && /bin/bash ./backup.sh weekly >> /home/user/logs/backup.log 2>&1
+# CRON (root crontab):
+#   00 2 * * * cd /home/user/apps && /bin/bash ./backup.sh daily   >> /home/user/logs/backup.log 2>&1
+#   30 2 * * 1 cd /home/user/apps && /bin/bash ./backup.sh weekly  >> /home/user/logs/backup.log 2>&1
 #   00 3 1 * * cd /home/user/apps && /bin/bash ./backup.sh monthly >> /home/user/logs/backup.log 2>&1
 #
-# ADDING NEW SITES:
-#   Sites are automatically added to this array by add-site.sh
-#   Manual format: "domain.com:frequency" where frequency is daily, weekly, or monthly
-#
+set -uo pipefail
+SCRIPT_NAME="backup.sh"
 
-set -euo pipefail
+_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${_DIR}/lib/common.sh"
+source "${_DIR}/lib/registry.sh"
+require_lib 1
+load_server_conf
 
-#=============================================================================
-# CONFIGURATION
-#=============================================================================
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-APP_HOME="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
-APP_OWNER="$(stat -c '%U:%G' "$APP_HOME")"
-APP_USER="${APP_OWNER%%:*}"
-
-WEB_ROOT="${APP_HOME}/www"
-BACKUP_ROOT="${APP_HOME}/backups"
-LOGS_ROOT="${APP_HOME}/logs"
 ERROR_LOG="${LOGS_ROOT}/backup-errors.log"
 
-# Site configuration array
-# Format: "domain:frequency"
-# Frequencies: daily, weekly, monthly
-SITES=(
-    # Sites will be added here by add-site.sh
-    # Example: "example.com:daily"
-)
+# Retention (server.conf overrides; defaults match the documented policy).
+: "${BACKUP_RETENTION_DAILY:=31}"
+: "${BACKUP_RETENTION_WEEKLY:=91}"
+: "${BACKUP_RETENTION_MONTHLY:=366}"
+: "${REGISTRY_SNAPSHOT_KEEP:=30}"
 
-#=============================================================================
-# VALIDATION
-#=============================================================================
+# --- PURE: cascade selection (DESIGN §8.5) ------------------------------------
+backup_should_run() {   # <site_freq> <run_freq>  → 0 if this site backs up on this run
+    case "$2" in
+        monthly) [ -n "$1" ] && [ "$1" != none ] ;;
+        weekly)  [ "$1" = daily ] || [ "$1" = weekly ] ;;
+        daily)   [ "$1" = daily ] ;;
+        *)       return 1 ;;
+    esac
+}
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 {daily|weekly|monthly}"
-    exit 1
-fi
+# --- back up one site (real: mysqldump + tar) ---------------------------------
+# Returns 0 ok, 1 error, 2 binding mismatch (skipped, critical).
+backup_site() {     # <domain> <run_date> <run_freq>
+    local domain=$1 thedate=$2 thefreq=$3
+    registry_read "$domain" || { echo "⚠ ${domain}: no registry record"; return 1; }
+    local docroot="${REG_DOC_ROOT}" wpc="${REG_DOC_ROOT}/wp-config.php"
+    [ -d "$docroot" ] || { echo "⚠ ${domain}: docroot missing"; return 1; }
+    read_wpconfig "$wpc" || { echo "⚠ ${domain}: wp-config unreadable"; return 1; }
 
-FREQUENCY=$1
-THEDATE=$(date +%y.%m.%d_%H.%M)
-THEFREQ="${FREQUENCY}"
-
-export THEDATE
-export THEFREQ
-
-# Validate frequency
-case "$FREQUENCY" in
-    daily|weekly|monthly) ;;
-    *)
-        echo "ERROR: Invalid frequency. Use: daily, weekly, or monthly"
-        exit 1
-        ;;
-esac
-
-mkdir -p "$LOGS_ROOT"
-touch "$ERROR_LOG"
-if [ "$(id -u)" -eq 0 ] && [ "$APP_USER" != "root" ]; then
-    chown "$APP_OWNER" "$LOGS_ROOT" "$ERROR_LOG" 2>/dev/null || true
-fi
-
-#=============================================================================
-# BACKUP FUNCTIONS
-#=============================================================================
-
-backup_site() {
-    local domain=$1
-    local site_path="${WEB_ROOT}/${domain}"
-    local wp_config="${site_path}/wp-config.php"
-
-    # Validate site exists
-    if [ ! -d "$site_path" ]; then
-        echo "⚠ Skipping ${domain}: Directory not found"
-        return 1
-    fi
-
-    if [ ! -f "$wp_config" ]; then
-        echo "⚠ Skipping ${domain}: wp-config.php not found"
-        return 1
-    fi
-
-    # Extract database credentials from wp-config.php
-    local dbname=$(grep "DB_NAME" "$wp_config" | cut -d "'" -f 4)
-    local dbuser=$(grep "DB_USER" "$wp_config" | cut -d "'" -f 4)
-    local dbpass=$(grep "DB_PASSWORD" "$wp_config" | cut -d "'" -f 4)
-
-    if [ -z "$dbname" ] || [ -z "$dbuser" ] || [ -z "$dbpass" ]; then
-        echo "⚠ Skipping ${domain}: Could not extract database credentials"
-        return 1
+    # Provenance cross-check — never back up the wrong database.
+    if [ "$WPC_DB_NAME" != "${REG_DB_NAME}" ]; then
+        echo "✗ ${domain}: CRITICAL — wp-config DB '${WPC_DB_NAME}' != registry '${REG_DB_NAME}', skipped"
+        return 2
     fi
 
     echo "Backing up: ${domain}"
+    local sitedir="${BACKUP_ROOT}/${domain}"
+    local tmpdir="${sitedir}/tmp"
+    mkdir -p "$sitedir" "$tmpdir"
+    local sqlbase="${tmpdir}/${REG_DB_NAME}_${thedate}.sql"
+    local archive="${sitedir}/${domain}_${thefreq}_${thedate}.tar.gz"
 
-    local sql_path="${site_path}/${domain}_${THEDATE}.sql.gz"
-    local archive_path="${BACKUP_ROOT}/${domain}/${domain}_${THEFREQ}_${THEDATE}.tar.gz"
+    # SQL dump staged OUTSIDE the web root; mysqldump exit checked directly.
+    if ! mysqldump_as "$WPC_DB_USER" "$WPC_DB_PASSWORD" "$REG_DB_NAME" > "$sqlbase" 2>>"$ERROR_LOG"; then
+        echo "  ✗ database dump failed"; rm -f "$sqlbase"; return 1
+    fi
+    gzip -f "$sqlbase"
+    local sqlgz="$(basename "$sqlbase").gz"
 
-    # Create database backup (credentials via process substitution to avoid exposure in ps output)
-    if { mysqldump --defaults-extra-file=<(printf "[client]\nuser=%s\npassword=%s\n" "$dbuser" "$dbpass") "$dbname" | gzip > "$sql_path"; } 2>> "$ERROR_LOG"; then
-        echo "  ✓ Database backup created"
-    else
-        echo "  ✗ Database backup failed"
-        rm -f "$sql_path"
-        return 1
+    # Self-describing archive: site files + SQL dump + the registry record.
+    local parent leaf; parent="$(dirname "$docroot")"; leaf="$(basename "$docroot")"
+    if ! tar -czf "$archive" \
+            --exclude="${leaf}/wp-content/cache" \
+            --exclude="${leaf}/wp-content/litespeed" \
+            -C "$parent" "$leaf" \
+            -C "$tmpdir" "$sqlgz" \
+            -C "$SITES_DIR" "${domain}.conf" 2>>"$ERROR_LOG"; then
+        echo "  ✗ archive creation failed"; rm -f "$archive" "${tmpdir}/${sqlgz}"; return 1
     fi
 
-    # Create archive
-    if sudo tar -czf "$archive_path" \
-        --exclude="${domain}/wp-content/cache" \
-        --exclude="${domain}/wp-content/litespeed" \
-        -C "$WEB_ROOT" \
-        "$domain" 2>> "$ERROR_LOG"; then
-        echo "  ✓ Archive created"
-    else
-        echo "  ✗ Archive creation failed"
-        rm -f "$sql_path" "$archive_path"
-        return 1
-    fi
-
-    # Remove temporary SQL backup
-    rm -f "$sql_path"
-    echo "  ✓ ${domain} backup complete"
-    echo ""
-
+    rm -f "${tmpdir}/${sqlgz}"; rmdir "$tmpdir" 2>/dev/null || true
+    echo "  ✓ ${domain} backup complete"; echo ""
     return 0
 }
 
-#=============================================================================
-# MAIN BACKUP PROCESS
-#=============================================================================
+# --- registry self-backup -----------------------------------------------------
+backup_registry_snapshot() {    # <run_date>
+    mkdir -p "${BACKUP_ROOT}/registry"
+    local snap="${BACKUP_ROOT}/registry/registry_${1}.tar.gz"
+    local extra=(); [ -f "$SERVER_CONF" ] && extra=("server.conf")
+    tar -czf "$snap" -C "$APP_DIR" sites.d "${extra[@]}" 2>>"$ERROR_LOG" || return 1
+    # keep the most recent N
+    ls -1t "${BACKUP_ROOT}"/registry/registry_*.tar.gz 2>/dev/null \
+        | tail -n +"$((REGISTRY_SNAPSHOT_KEEP + 1))" | xargs -r rm -f
+}
 
-# Change to web root
-cd "$WEB_ROOT" || exit 1
-
-echo "========================================="
-echo "Backup Run: ${FREQUENCY}"
-echo "Date: ${THEDATE}"
-echo "========================================="
-echo ""
-
-# Check if there are any sites configured
-if [ ${#SITES[@]} -eq 0 ]; then
-    echo "No sites configured for backup"
-    echo "Add sites using: ~/apps/add-site.sh"
-    echo ""
-    exit 0
-fi
-
-# Process sites based on frequency
-BACKUP_COUNT=0
-SKIPPED_COUNT=0
-
-for entry in "${SITES[@]}"; do
-    # Skip empty entries
-    if [ -z "$entry" ]; then
-        continue
-    fi
-
-    # Parse domain:frequency
-    domain="${entry%%:*}"
-    site_freq="${entry##*:}"
-
-    # Determine if this site should be backed up based on cascading logic
-    should_backup=false
-    case "$FREQUENCY" in
-        monthly)
-            # Monthly backs up ALL sites
-            should_backup=true
-            ;;
-        weekly)
-            # Weekly backs up daily and weekly sites
-            if [ "$site_freq" = "daily" ] || [ "$site_freq" = "weekly" ]; then
-                should_backup=true
-            fi
-            ;;
-        daily)
-            # Daily backs up only daily sites
-            if [ "$site_freq" = "daily" ]; then
-                should_backup=true
-            fi
-            ;;
+# --- scoped retention cleanup (only per-site archives; reserved dirs safe) -----
+cleanup_old_backups() {     # <run_freq>
+    local ret
+    case "$1" in
+        daily) ret=$BACKUP_RETENTION_DAILY ;; weekly) ret=$BACKUP_RETENTION_WEEKLY ;;
+        monthly) ret=$BACKUP_RETENTION_MONTHLY ;; *) return 0 ;;
     esac
+    # mindepth/maxdepth 2 confines deletion to BACKUP_ROOT/<domain>/<archive>;
+    # pre-removal/ (depth 3) and the registry/ dir are never touched.
+    find "$BACKUP_ROOT" -mindepth 2 -maxdepth 2 -type f \
+        -name "*_${1}_*.tar.gz" -not -path "*/registry/*" -mtime "+${ret}" -delete 2>>"$ERROR_LOG" || true
+}
 
-    if [ "$should_backup" = true ]; then
-        if backup_site "$domain"; then
-            BACKUP_COUNT=$((BACKUP_COUNT + 1))
-        else
-            SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-        fi
+main() {
+    case "${1:-}" in -h|--help) show_help "${BASH_SOURCE[0]}"; exit 0 ;; esac
+    [ $# -eq 1 ] || { echo "Usage: $0 {daily|weekly|monthly}"; exit 1; }
+    local freq=$1
+    case "$freq" in daily|weekly|monthly) ;; *) echo "ERROR: invalid frequency"; exit 1 ;; esac
+    local thedate; thedate="$(date +%y.%m.%d_%H.%M)"
+    mkdir -p "$LOGS_ROOT"; touch "$ERROR_LOG"
+
+    echo "========================================="
+    echo "Backup Run: ${freq}"        # <-- log-line contract (health-check parses these)
+    echo "Date: ${thedate}"
+    echo "========================================="
+    echo ""
+
+    # Fail-loud: an empty registry while sites exist on disk = a migration mistake,
+    # not "nothing to do". (DESIGN §8.5 — never silently stop backing up.)
+    local n_records n_ondisk
+    n_records="$(registry_list | grep -c . || true)"
+    n_ondisk="$(find "$WEB_ROOT" -maxdepth 2 -name wp-config.php -type f 2>/dev/null | grep -c . || true)"
+    if [ "$n_records" -eq 0 ] && [ "$n_ondisk" -gt 0 ]; then
+        echo "✗ CRITICAL: registry is empty but ${n_ondisk} site(s) exist on disk — refusing to run." >&2
+        exit 1
     fi
-done
 
-echo "========================================="
-echo "Backup Complete"
-echo "  Successfully backed up: ${BACKUP_COUNT} sites"
-if [ $SKIPPED_COUNT -gt 0 ]; then
-    echo "  Skipped (errors):       ${SKIPPED_COUNT} sites"
-fi
-echo "========================================="
-echo ""
+    local ok=0 skip=0 d freq_site
+    while IFS= read -r d; do
+        [ -n "$d" ] || continue
+        freq_site="$(registry_field "$d" BACKUP_FREQ)"
+        backup_should_run "$freq_site" "$freq" || continue
+        if backup_site "$d" "$thedate" "$freq"; then ok=$((ok+1)); else skip=$((skip+1)); fi
+    done < <(registry_list)
 
-#=============================================================================
-# CLEANUP OLD BACKUPS
-#=============================================================================
+    backup_registry_snapshot "$thedate"
 
-echo "Cleaning up old backups..."
+    echo "========================================="
+    echo "Backup Complete"
+    echo "  Successfully backed up: ${ok} sites"
+    [ "$skip" -gt 0 ] && echo "  Skipped (errors):       ${skip} sites"
+    echo "========================================="
+    echo ""
 
-case "$FREQUENCY" in
-    daily)
-        echo "Removing daily backups older than 31 days..."
-        sudo find "$BACKUP_ROOT" -name "*_daily_*" -type f -mtime +31 -delete 2>> "$ERROR_LOG" || true
-        ;;
-    weekly)
-        echo "Removing weekly backups older than 91 days..."
-        sudo find "$BACKUP_ROOT" -name "*_weekly_*" -type f -mtime +91 -delete 2>> "$ERROR_LOG" || true
-        ;;
-    monthly)
-        echo "Removing monthly backups older than 366 days..."
-        sudo find "$BACKUP_ROOT" -name "*_monthly_*" -type f -mtime +366 -delete 2>> "$ERROR_LOG" || true
-        ;;
-esac
+    echo "Cleaning up old backups..."
+    cleanup_old_backups "$freq"
+    echo "Cleanup complete"; echo ""
+}
 
-echo "Cleanup complete"
-echo ""
+[ "${BASH_SOURCE[0]}" = "${0}" ] && main "$@"

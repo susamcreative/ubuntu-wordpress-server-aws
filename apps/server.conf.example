@@ -1,0 +1,25 @@
+# server.conf — instance configuration (Task P1.4, DESIGN §7.1)
+#
+# Copy to ~/apps/server.conf and fill in. Scripts source this if present and fall
+# back to the built-in defaults below if absent, so a fresh install works before
+# any configuration. This file is INSTANCE STATE — never committed (see .gitignore).
+
+ADMIN_EMAIL="admin@example.com"        # WP admin email for created sites
+CERTBOT_EMAIL="admin@example.com"      # Let's Encrypt account email (expiry warnings)
+WEBHOOK_URL=""                          # health-check notifications (Make.com, Zapier, ...)
+
+# Alert thresholds
+DISK_WARN_THRESHOLD=80
+DISK_CRIT_THRESHOLD=90
+SSL_WARN_DAYS=30
+SSL_CRIT_DAYS=7
+ERROR_WARN_COUNT=10
+ERROR_CRIT_COUNT=50
+ALERT_THROTTLE_HOURS=24
+
+# Retention
+PREDROP_DUMP_RETENTION_DAYS=30
+BACKUP_RETENTION_DAILY=31
+BACKUP_RETENTION_WEEKLY=91
+BACKUP_RETENTION_MONTHLY=366
+REGISTRY_SNAPSHOT_KEEP=30

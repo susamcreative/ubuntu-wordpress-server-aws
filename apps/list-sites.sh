@@ -124,20 +124,12 @@ get_ssl_days() {
 }
 
 get_backup_frequency() {
+    # Registry-driven (BACKUP_FREQ in the site's record), not the old SITES array.
     local domain=$1
-    local backup_script="/home/${USER}/apps/backup.sh"
-
-    # Check if backup.sh exists
-    if [ ! -f "$backup_script" ]; then
-        echo "None"
-        return
-    fi
-
-    # Search for domain in SITES array and extract frequency
-    local frequency=$(grep "\"${domain}:" "$backup_script" 2>/dev/null | sed 's/.*"\(.*\):\(.*\)".*/\2/' | tr -d '[:space:]')
-
-    if [ -n "$frequency" ]; then
-        # Capitalize first letter for display
+    local rec="/home/${USER}/apps/sites.d/${domain}.conf"
+    local frequency=""
+    [ -f "$rec" ] && frequency=$(grep '^BACKUP_FREQ=' "$rec" 2>/dev/null | head -1 | cut -d'"' -f2)
+    if [ -n "$frequency" ] && [ "$frequency" != none ]; then
         echo "${frequency^}"
     else
         echo "None"

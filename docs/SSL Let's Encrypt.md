@@ -22,6 +22,8 @@ Now, get the SSL certificate with following command
 sudo certbot --nginx certonly -d _domain_name_ -d www._domain_name_
 ```
 
+On first run certbot asks for an account email (used for expiry warnings). Use the same address you set as `CERTBOT_EMAIL` in `~/apps/server.conf`, so certificates that `create-site.sh` and `promote-site.sh` obtain automatically share one account. To set or change it later: `sudo certbot update_account --email you@example.com`.
+
 ## Generate Strong Diffie-Hellman Group
 
 This is only needed once per server

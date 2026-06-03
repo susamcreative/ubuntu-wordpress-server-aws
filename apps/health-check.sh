@@ -591,21 +591,12 @@ get_ssl_expiry_date() {
 }
 
 get_backup_frequency() {
+    # Registry-driven (BACKUP_FREQ in the site's record), not the old SITES array.
     local domain=$1
-    local backup_script="${APP_HOME}/apps/backup.sh"
-
-    if [ ! -f "$backup_script" ]; then
-        echo "none"
-        return
-    fi
-
-    local frequency=$(grep "\"${domain}:" "$backup_script" 2>/dev/null | sed 's/.*"\(.*\):\(.*\)".*/\2/' | tr -d '[:space:]')
-
-    if [ -n "$frequency" ]; then
-        echo "$frequency"
-    else
-        echo "none"
-    fi
+    local rec="${APP_HOME}/apps/sites.d/${domain}.conf"
+    local frequency=""
+    [ -f "$rec" ] && frequency=$(grep '^BACKUP_FREQ=' "$rec" 2>/dev/null | head -1 | cut -d'"' -f2)
+    echo "${frequency:-none}"
 }
 
 get_last_backup_hours() {
