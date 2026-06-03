@@ -32,6 +32,13 @@ assert_refuses "DROP-4 refuse: PROTECTED site" \
 assert_refuses "DROP-6 refuse: registry binds requester to a different DB" \
     can_drop_database bp_db clone.dev.example.com
 
+# SAFE-3 (recursive): the cross-reference scan is recursive, not top-level only.
+# A wp-config nested deep inside another tree that names a site's DB must still
+# block that DB's drop. Plant one referencing prod_db and confirm the refusal.
+fixture_wpconfig "$WEB_ROOT/shop.example.com/nested/deep" prod_db nst_usr nst_
+assert_refuses "SAFE-3 nested: a deep foreign wp-config reference blocks the drop" \
+    can_drop_database prod_db shop.example.com
+
 # Nested-child containment: removing the production docroot must refuse while a
 # staging site lives inside it.
 assert_refuses "docroot refuse: nested staging inside parent" \
