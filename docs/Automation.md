@@ -117,17 +117,51 @@ ls -lht ~/backups/yourdomain.com/ | head -10
 
 ## Automate Log Cleaning
 
-Logs left unattended can grow big in size. In order to clean them up, we will utilize logrotate.
+Logs left unattended can grow large. Use logrotate to retain up to 14 compressed
+rotations. It performs file rotation as the app user, which is required for an
+app-writable log directory. The policy then sends Nginx `USR1` so its workers
+reopen the new files instead of continuing to write to deleted file descriptors.
 
-Move the site-logs file to the server.
-```
+Upload the policy to the app user's home directory:
+
+```bash
 scp site-logs _server_alias_:/home/_user_/
 ```
 
-Move the file to the right location.
+On the server, render the username placeholder and install the policy as a
+root-owned logrotate configuration:
+
+```bash
+APP_USER=robot
+sudo install -o root -g root -m 0644 "/home/${APP_USER}/site-logs" /etc/logrotate.d/site-logs
+sudo sed -i "s/_user_/${APP_USER}/g" /etc/logrotate.d/site-logs
+if sudo grep -q '_user_' /etc/logrotate.d/site-logs; then
+    echo 'ERROR: unresolved _user_ placeholder'
+else
+    echo 'OK: username rendered'
+fi
+sudo logrotate --debug /etc/logrotate.d/site-logs
 ```
-mv /home/_user_/site-logs /etc/logrotate.d/
+
+Replace `robot` with the app username. The debug run validates the policy without
+rotating anything. To perform a one-time end-to-end test, force a rotation and
+confirm that Nginx holds no deleted log files:
+
+```bash
+sudo logrotate --force /etc/logrotate.d/site-logs
+if sudo ls -l /proc/"$(cat /run/nginx.pid)"/fd | grep -q '(deleted)'; then
+    echo 'ERROR: Nginx still has deleted log files open'
+else
+    echo 'OK: Nginx reopened every rotated log'
+fi
 ```
+
+The check should print `OK`. If deleted log descriptors are present,
+reopen them immediately with `sudo nginx -s reopen` and investigate the
+post-rotation signal before relying on automatic rotation. If the forced run
+reports that today's date-suffixed destination already exists, the logs already
+rotated today; keep the validated policy installed and perform the descriptor
+check after the next scheduled rotation instead.
 
 
 ## WordPress Health & SSL Monitoring

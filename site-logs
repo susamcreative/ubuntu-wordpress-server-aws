@@ -1,14 +1,18 @@
 /home/_user_/logs/*.log {
     daily
     rotate 14
-    size 1M
+    maxsize 1M
     compress
+    delaycompress
     missingok
     notifempty
     dateext
+    su _user_ _user_
     create 0664 _user_ _user_
     sharedscripts
     postrotate
-        invoke-rc.d nginx rotate >/dev/null 2>&1
+        if [ -s /run/nginx.pid ]; then
+            /bin/kill -USR1 "$(/bin/cat /run/nginx.pid)"
+        fi
     endscript
 }
